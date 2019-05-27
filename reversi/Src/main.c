@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery.h"
+#include "stm32f769i_discovery_ts.h"
 #include <stdbool.h>
 /* USER CODE END Includes */
 
@@ -43,7 +44,7 @@
 #define AVG_SLOPE               25    /* Avg_Solpe multiply by 10 */
 #define VREF                   3300
 
-#define QUADRADO BSP_LCD_GetYSize()/10
+#define QUADRADO BSP_LCD_GetYSize()/10 //a mudar se o ecra for diferente
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +53,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc1;
 
 DMA2D_HandleTypeDef hdma2d;
 
@@ -66,44 +67,38 @@ SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
 volatile uint32_t ConvertedValue;
-bool TEMPFLAG=false;
+volatile unsigned int segundos=0;
+volatile unsigned int timeFlag=0;
+volatile unsigned int TEMPFLAG=0;
+volatile unsigned int flagLcd=0;
+unsigned int min=0;
+TS_StateTypeDef TS_State; //coordenadas do ts
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_ADC1_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_DSIHOST_DSI_Init(void);
 static void MX_FMC_Init(void);
 static void MX_LTDC_Init(void);
-static void MX_ADC2_Init(void);
 static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
-static void LCD_Config();
+
+static void LCD_Config(void);
+void showTime(void);
+void touch_screen_config(void);
+void temp(void);
+void meteOndeTocaste(void);
+void inserePeca(int a,int b);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void temp() {
 
-	long int JTemp;
-	char desc[100];
 
-	HAL_Delay(TEMP_REFRESH_PERIOD);
-	HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc2, TEMP_REFRESH_PERIOD);
-	if (status == HAL_OK) {
-		ConvertedValue = HAL_ADC_GetValue(&hadc2); //get value
-		JTemp = ((((ConvertedValue * VREF) / MAX_CONVERTED_VALUE)- VSENS_AT_AMBIENT_TEMP) * 10 / AVG_SLOPE) + AMBIENT_TEMP;
-
-		/* Display the Temperature Value on the LCD */
-		sprintf(desc, "Temp: %ld C", JTemp);
-		BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170, 0, (uint8_t *) desc, LEFT_MODE);
-		BSP_LCD_ClearStringLine(BSP_LCD_GetXSize()-170);
-	}
-
-	TEMPFLAG=false;
-
-}
 /* USER CODE END 0 */
 
 /**
@@ -141,17 +136,20 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_ADC1_Init();
   MX_DMA2D_Init();
   MX_DSIHOST_DSI_Init();
   MX_FMC_Init();
   MX_LTDC_Init();
-  MX_ADC2_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   //lcd enable
   LCD_Config();
-  	//adc enable
-  HAL_ADC_Start(&hadc2);
+  //adc enable
+  HAL_ADC_Start(&hadc1);
+  //ts enable
+  touch_screen_config();
+  HAL_TIM_Base_Start_IT(&htim6);
 
   /* USER CODE END 2 */
 
@@ -159,20 +157,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  temp();
-	  for(int i=0;i<8;i++){
-		int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
-		for(int j=0;j<8;j++){
-			int y=QUADRADO+j*QUADRADO;
-			//colorChange
-			BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);
-			BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
-			BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-			BSP_LCD_DrawRect(x, y, QUADRADO, QUADRADO);
-			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);
-			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);
-		}
-	  }
+	 if(TEMPFLAG>=2)
+		  temp();
+	  if(timeFlag==1)
+		 showTime();
+	  if(flagLcd==1)
+		  meteOndeTocaste();
 
     /* USER CODE END WHILE */
 
@@ -242,52 +232,52 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC2 Initialization Function
+  * @brief ADC1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_ADC2_Init(void)
+static void MX_ADC1_Init(void)
 {
 
-  /* USER CODE BEGIN ADC2_Init 0 */
+  /* USER CODE BEGIN ADC1_Init 0 */
 
-  /* USER CODE END ADC2_Init 0 */
+  /* USER CODE END ADC1_Init 0 */
 
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /* USER CODE BEGIN ADC2_Init 1 */
+  /* USER CODE BEGIN ADC1_Init 1 */
 
-  /* USER CODE END ADC2_Init 1 */
+  /* USER CODE END ADC1_Init 1 */
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
   */
-  hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc2.Init.ScanConvMode = DISABLE;
-  hadc2.Init.ContinuousConvMode = ENABLE;
-  hadc2.Init.DiscontinuousConvMode = DISABLE;
-  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc2.Init.NbrOfConversion = 1;
-  hadc2.Init.DMAContinuousRequests = DISABLE;
-  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
-  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
   */
-  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN ADC2_Init 2 */
+  /* USER CODE BEGIN ADC1_Init 2 */
 
-  /* USER CODE END ADC2_Init 2 */
+  /* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -613,6 +603,7 @@ static void MX_FMC_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -622,12 +613,55 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOJ_CLK_ENABLE();
+
+  /*Configure GPIO pin : PI13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
 /* USER CODE BEGIN 4 */
+void showTime(void){
+
+	char a[50];
+
+	sprintf(a,"Time: %d:%02d",min,segundos);
+if(segundos>60){
+	min++;
+	segundos=0;
+}
+
+
+	BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170,(uint16_t)Font24.Height ,(uint8_t *)a, LEFT_MODE);
+
+}
+
+void temp(void) {
+
+	long int JTemp;
+	char desc[100];
+
+
+	HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc1, TEMP_REFRESH_PERIOD);
+	if (status == HAL_OK) {
+		ConvertedValue = HAL_ADC_GetValue(&hadc1); //get value
+		JTemp = ((((ConvertedValue * VREF) / MAX_CONVERTED_VALUE)- VSENS_AT_AMBIENT_TEMP) * 10 / AVG_SLOPE) + AMBIENT_TEMP;
+
+		/* Display the Temperature Value on the LCD */
+		sprintf(desc, "Temp: %ld C", JTemp);
+		BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170, 0, (uint8_t *) desc, LEFT_MODE);
+		BSP_LCD_ClearStringLine(BSP_LCD_GetXSize()-170);
+	}
+	TEMPFLAG=0;
+}
+
 static void LCD_Config(void)
 {
   uint32_t  lcd_status = LCD_OK;
@@ -646,14 +680,84 @@ static void LCD_Config(void)
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetFont(&Font24);
+
+  for(int i=0;i<8;i++){
+	int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
+	for(int j=0;j<8;j++){
+		int y=QUADRADO+j*QUADRADO;
+		//colorChange
+		BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);
+		BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+		BSP_LCD_DrawRect(x, y, QUADRADO, QUADRADO);
+		BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
+		BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
+	}
+  }
 }
 
+void touch_screen_config(void){
+
+	  BSP_TS_Init((uint16_t)BSP_LCD_GetXSize(),(uint16_t)BSP_LCD_GetYSize());
+	  BSP_TS_ITConfig();
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos os timers
 
-	if (htim->Instance == TIM6)
-		TEMPFLAG=true;
+	if (htim->Instance == TIM6){
+		TEMPFLAG++;
+		segundos++;
+		timeFlag=1;
+	}
 
+
+}
+
+
+
+void inserePeca(int a,int b){
+
+1;
+}
+
+void meteOndeTocaste(void){
+
+	int tocouX=TS_State.touchX[0];
+	int tocouY=TS_State.touchY[0];
+	int possicao=0;
+
+
+	int limiteEsquerdo=BSP_LCD_GetXSize()/10;
+	flagLcd=0;
+
+
+	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+	BSP_LCD_DrawCircle(TS_State.touchX[0],TS_State.touchY[0], 20);
+
+
+	  for(int i=0;i<8;i++){
+		int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
+		for(int j=0;j<8;j++){
+			possicao++;
+			int y=QUADRADO+j*QUADRADO;
+				if(tocouX<x && tocouX>limiteEsquerdo && tocouY<y && tocouY>QUADRADO){
+					inserePeca(x,y);
+
+				}
+
+		}
+	  }
+
+
+
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
+
+	if(GPIO_Pin==GPIO_PIN_13){
+		BSP_TS_GetState(&TS_State);
+		flagLcd=1;
+	}
 }
 /* USER CODE END 4 */
 
