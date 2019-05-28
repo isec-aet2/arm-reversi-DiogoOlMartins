@@ -17,7 +17,7 @@
 
 //defines
 #define QUADRADO BSP_LCD_GetYSize()/10 //a mudar se o ecra for diferente
-
+#define limiteEsquerdo BSP_LCD_GetXSize() / 10
 
 
 
@@ -26,20 +26,22 @@ typedef struct jogadas fnode,*pfnode;
 
 struct jogadas{
 
-	unsigned int valida;
-	unsigned int possicao;//de 1 a 64
-	unsigned int possicaoX;
-	unsigned int possicaoY;
-	bool ja_jogada;
+	 bool valida;
+	 int posicao;//de 1 a 64
+	 unsigned int posicaoX;//poonta superior esquerda do rectangulo
+	 unsigned int posicaoY;
+
+	 bool ja_jogada;
+
 	pfnode next;
 
 };
 
 
 
-pfnode addJogada(int validat,int possicao,int possicaot,int possicaoy,bool ja_jogadat,pfnode lista);
+pfnode addJogada(bool validat,int possicao,int possicaot,int possicaoy,bool ja_jogadat,pfnode lista);
 
 void insereAs4inic(pfnode list);
-void inserePeca(int a,int b);
+void inserePeca(int a,int b,bool x);
 
 #endif /* JOGADAS_H_ */

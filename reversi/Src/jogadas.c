@@ -9,9 +9,9 @@
 
 
 //variaveis globais
-bool jogador=true;
 
-pfnode addJogada(int validat,int possicao,int possicaox,int possicaoy,bool ja_jogadat,pfnode lista){
+
+pfnode addJogada(bool validat,int posicao,int posicaox,int posicaoy,bool ja_jogadat,pfnode lista){
 
 	char erro[100];
 	pfnode auxLista=lista;
@@ -24,9 +24,9 @@ pfnode addJogada(int validat,int possicao,int possicaox,int possicaoy,bool ja_jo
 	}
 
 	aux->valida=validat;
-	aux->possicao=possicao;
-	aux->possicaoX=possicaox;
-	aux->possicaoX=possicaoy;
+	aux->posicao=posicao;
+	aux->posicaoX=posicaox;
+	aux->posicaoY=posicaoy;
 	aux->ja_jogada=ja_jogadat;
 	aux->next=NULL;
 
@@ -52,9 +52,12 @@ void insereAs4inic(pfnode list){
 	pfnode auxlist=list;
 
 	while(auxlist!=NULL){
-		if(auxlist->possicao==28 || auxlist->possicao==37)
-			inserePeca(auxlist->possicaoX,auxlist->possicaoY);
-		if(auxlist->possicao==29 || auxlist->possicao==36)
+		if(auxlist->posicao==28 || auxlist->posicao==37){
+			inserePeca(auxlist->posicaoX,auxlist->posicaoY,true);
+			auxlist->valida=false;
+		}
+		if(auxlist->posicao==29 || auxlist->posicao==36)
+			inserePeca(auxlist->posicaoX,auxlist->posicaoY,false);
 		auxlist=auxlist->next;
 	}
 
@@ -62,17 +65,17 @@ void insereAs4inic(pfnode list){
 }
 
 
-void inserePeca(int a,int b){
+void inserePeca(int a,int b,bool x){
 
-	a=a-QUADRADO/2;
-	b=b-QUADRADO/2;
+	a=a+QUADRADO/2;
+	b=b+QUADRADO/2;
 
-	if(jogador==true)
-		jogador=false;
-	else
-		jogador=true;
+//	if(jogador==true)
+//		jogador=false;
+//	else
+//		jogador=true;
 
-	if(jogador==true){
+	if(x==true){
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DrawCircle(a,b, QUADRADO/2-8);
 	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);

@@ -46,6 +46,8 @@
 #define AVG_SLOPE               25    /* Avg_Solpe multiply by 10 */
 #define VREF                   3300
 
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -75,6 +77,7 @@ volatile unsigned int flagLcd=0;
 volatile unsigned int flagToca=1;
 volatile unsigned int fl_gamestart=0;
 volatile unsigned int fl_gamestarted=0;
+bool jogador=true;
 
 unsigned int min=0;
 
@@ -662,7 +665,6 @@ if(segundos>60){
 	segundos=0;
 }
 
-
 	BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170,(uint16_t)Font24.Height ,(uint8_t *)a, LEFT_MODE);
 
 }
@@ -691,9 +693,9 @@ pfnode LCD_GameOn(pfnode list){
 	int posicao=0;
 
 	  for(int i=0;i<8;i++){
-		int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
+		int y=QUADRADO+i*QUADRADO;//
 		for(int j=0;j<8;j++){
-			int y=QUADRADO+j*QUADRADO;
+			int x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
 			posicao++;
 			list=addJogada(0,posicao,x,y,false,list);
 
@@ -703,8 +705,13 @@ pfnode LCD_GameOn(pfnode list){
 			BSP_LCD_DrawRect(x, y, QUADRADO, QUADRADO);
 			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
 			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
+
+			//char a[50];
+			//sprintf(a,"%d",posicao);
+			//BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);
 		}
 	  }
+
 	  insereAs4inic(list);
 	  return list;
 }
@@ -756,11 +763,11 @@ void meteOndeTocaste(void){
 	int tocouY = TS_State.touchY[0];
 	int possicao = 0;
 
-	int limiteEsquerdo = BSP_LCD_GetXSize() / 10;
+
 	flagLcd = 0;
 
 	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-	BSP_LCD_DrawCircle(TS_State.touchX[0], TS_State.touchY[0], 20);
+	BSP_LCD_DrawCircle(tocouX, tocouY, 20);
 
 	for (int i = 0; i <= 8; i++) {
 		int x = (BSP_LCD_GetXSize() / 10) + i * QUADRADO; //
@@ -768,7 +775,10 @@ void meteOndeTocaste(void){
 			possicao++;
 			int y = QUADRADO + j * QUADRADO;
 			if (tocouX<x && tocouX>limiteEsquerdo && tocouY<y && tocouY>QUADRADO) {
-				inserePeca(x, y);
+
+				//meter aqui condição de jogada valida
+				jogador=!jogador;
+				inserePeca(x-QUADRADO, y-QUADRADO,jogador);
 
 				return;
 
