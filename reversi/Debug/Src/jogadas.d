@@ -1,4 +1,9 @@
-Src/main.o: ../Src/main.c ../Inc/main.h \
+Src/jogadas.o: ../Src/jogadas.c ../Src/jogadas.h \
+ ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h \
+ ../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h \
+ ../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/adv7533.h \
+ ../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/../Common/audio.h \
+ ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_sdram.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
@@ -36,21 +41,25 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dsi.h \
- ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h \
- ../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h \
- ../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/adv7533.h \
- ../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/../Common/audio.h \
- ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_sdram.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery.h \
  ../Drivers/BSP/STM32F769I-Discovery/../../../Utilities/Fonts/fonts.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_ts.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h \
  ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/ft6x06.h \
- ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/../Common/ts.h \
- ../Src/jogadas.h
+ ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/../Common/ts.h
 
-../Inc/main.h:
+../Src/jogadas.h:
+
+../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h:
+
+../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h:
+
+../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/adv7533.h:
+
+../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/../Common/audio.h:
+
+../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_sdram.h:
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 
@@ -126,16 +135,6 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dsi.h:
 
-../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h:
-
-../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h:
-
-../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/adv7533.h:
-
-../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/../Common/audio.h:
-
-../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_sdram.h:
-
 ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery.h:
 
 ../Drivers/BSP/STM32F769I-Discovery/../../../Utilities/Fonts/fonts.h:
@@ -149,5 +148,3 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/ft6x06.h:
 
 ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/../Common/ts.h:
-
-../Src/jogadas.h:

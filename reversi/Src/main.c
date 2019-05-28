@@ -24,10 +24,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery.h"
 #include "stm32f769i_discovery_ts.h"
-#include <stdbool.h>
+#include "jogadas.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,7 +46,6 @@
 #define AVG_SLOPE               25    /* Avg_Solpe multiply by 10 */
 #define VREF                   3300
 
-#define QUADRADO BSP_LCD_GetYSize()/10 //a mudar se o ecra for diferente
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,7 +72,12 @@ volatile unsigned int segundos=0;
 volatile unsigned int timeFlag=0;
 volatile unsigned int TEMPFLAG=0;
 volatile unsigned int flagLcd=0;
+volatile unsigned int flagToca=1;
+volatile unsigned int fl_gamestart=0;
+volatile unsigned int fl_gamestarted=0;
+
 unsigned int min=0;
+
 TS_StateTypeDef TS_State; //coordenadas do ts
 
 /* USER CODE END PV */
@@ -92,7 +98,9 @@ void showTime(void);
 void touch_screen_config(void);
 void temp(void);
 void meteOndeTocaste(void);
-void inserePeca(int a,int b);
+
+pfnode LCD_GameOn(pfnode list);
+void insereAs4inic(pfnode list);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -108,6 +116,8 @@ void inserePeca(int a,int b);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+	pfnode lista=NULL;
 
   /* USER CODE END 1 */
   
@@ -157,12 +167,26 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	 if(TEMPFLAG>=2)
-		  temp();
-	  if(timeFlag==1)
-		 showTime();
-	  if(flagLcd==1)
-		  meteOndeTocaste();
+		if (fl_gamestart==0) {
+			fl_gamestarted=1;
+
+		} else {
+			if(fl_gamestarted==1){
+				lista=LCD_GameOn(lista);
+				fl_gamestarted=0;
+			}
+			if (TEMPFLAG >= 2)
+				temp();
+			if (timeFlag == 1)
+				showTime();
+			if (flagLcd == 1) {
+				meteOndeTocaste();
+				flagToca = 1;
+			}
+		}
+
+
+
 
     /* USER CODE END WHILE */
 
@@ -632,7 +656,7 @@ void showTime(void){
 
 	char a[50];
 
-	sprintf(a,"Time: %d:%02d",min,segundos);
+	sprintf(a,"Time:%02d:%02d",min,segundos);
 if(segundos>60){
 	min++;
 	segundos=0;
@@ -662,6 +686,29 @@ void temp(void) {
 	TEMPFLAG=0;
 }
 
+pfnode LCD_GameOn(pfnode list){
+
+	int posicao=0;
+
+	  for(int i=0;i<8;i++){
+		int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
+		for(int j=0;j<8;j++){
+			int y=QUADRADO+j*QUADRADO;
+			posicao++;
+			list=addJogada(0,posicao,x,y,false,list);
+
+			BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
+			BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
+			BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+			BSP_LCD_DrawRect(x, y, QUADRADO, QUADRADO);
+			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
+			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
+		}
+	  }
+	  insereAs4inic(list);
+	  return list;
+}
+
 static void LCD_Config(void)
 {
   uint32_t  lcd_status = LCD_OK;
@@ -681,19 +728,6 @@ static void LCD_Config(void)
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetFont(&Font24);
 
-  for(int i=0;i<8;i++){
-	int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
-	for(int j=0;j<8;j++){
-		int y=QUADRADO+j*QUADRADO;
-		//colorChange
-		BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);
-		BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
-		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-		BSP_LCD_DrawRect(x, y, QUADRADO, QUADRADO);
-		BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
-		BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
-	}
-  }
 }
 
 void touch_screen_config(void){
@@ -709,44 +743,38 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 		segundos++;
 		timeFlag=1;
 	}
-
-
 }
 
 
 
-void inserePeca(int a,int b){
 
-1;
-}
 
 void meteOndeTocaste(void){
 
-	int tocouX=TS_State.touchX[0];
-	int tocouY=TS_State.touchY[0];
-	int possicao=0;
+	HAL_Delay(200);
+	int tocouX = TS_State.touchX[0];
+	int tocouY = TS_State.touchY[0];
+	int possicao = 0;
 
-
-	int limiteEsquerdo=BSP_LCD_GetXSize()/10;
-	flagLcd=0;
-
+	int limiteEsquerdo = BSP_LCD_GetXSize() / 10;
+	flagLcd = 0;
 
 	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-	BSP_LCD_DrawCircle(TS_State.touchX[0],TS_State.touchY[0], 20);
+	BSP_LCD_DrawCircle(TS_State.touchX[0], TS_State.touchY[0], 20);
 
-
-	  for(int i=0;i<8;i++){
-		int x=(BSP_LCD_GetXSize()/10)+i*QUADRADO;//
-		for(int j=0;j<8;j++){
+	for (int i = 0; i <= 8; i++) {
+		int x = (BSP_LCD_GetXSize() / 10) + i * QUADRADO; //
+		for (int j = 0; j <= 8; j++) {
 			possicao++;
-			int y=QUADRADO+j*QUADRADO;
-				if(tocouX<x && tocouX>limiteEsquerdo && tocouY<y && tocouY>QUADRADO){
-					inserePeca(x,y);
+			int y = QUADRADO + j * QUADRADO;
+			if (tocouX<x && tocouX>limiteEsquerdo && tocouY<y && tocouY>QUADRADO) {
+				inserePeca(x, y);
 
-				}
+				return;
 
+			}
 		}
-	  }
+	}
 
 
 
@@ -754,10 +782,18 @@ void meteOndeTocaste(void){
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 
-	if(GPIO_Pin==GPIO_PIN_13){
-		BSP_TS_GetState(&TS_State);
-		flagLcd=1;
+
+	 if(flagToca == 1) {
+		flagToca = 0;
+		if (GPIO_Pin == GPIO_PIN_13) {
+
+			BSP_TS_GetState(&TS_State);
+			flagLcd = 1;
+			fl_gamestart=1;
+
+		}
 	}
+
 }
 /* USER CODE END 4 */
 
