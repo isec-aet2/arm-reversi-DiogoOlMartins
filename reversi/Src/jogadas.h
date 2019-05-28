@@ -26,11 +26,12 @@ typedef struct jogadas fnode,*pfnode;
 
 struct jogadas{
 
-	 bool valida;
-	 int posicao;//de 1 a 64
-	 unsigned int posicaoX;//poonta superior esquerda do rectangulo
-	 unsigned int posicaoY;
 
+	 int posicao;//de 1 a 64
+	 unsigned int posicaoX;//ponta superior esquerda do rectangulo
+	 unsigned int posicaoY;
+	 int jogador;
+	 bool valida;
 	 bool ja_jogada;
 
 	pfnode next;
@@ -39,9 +40,90 @@ struct jogadas{
 
 
 
-pfnode addJogada(bool validat,int possicao,int possicaot,int possicaoy,bool ja_jogadat,pfnode lista);
+pfnode addJogada(bool validat,int possicao,int possicaot,int possicaoy,pfnode lista);
 
-void insereAs4inic(pfnode list);
-void inserePeca(int a,int b,bool x);
+void insereAs4inic(pfnode list,int jogador);
+void inserePeca(int a,int b,int jogador);
+
+pfnode getPosicao(pfnode list,int posi);
+bool seraValida(pfnode list,int posi,int jogador);
+
+int verSeValidaHorizontal(pfnode list,int posi,int jogador, int enemy);
+int verSeValidaVertical(pfnode list,int posi,int jogador, int enemy);
+int verSeValidaDiagonalSubir(pfnode list,int posi,int jogador, int enemy);
+int verSeValidaDiagonalDesc(pfnode list,int posi,int jogador, int enemy);
+
 
 #endif /* JOGADAS_H_ */
+
+
+
+
+
+/*
+
+
+char e=enemy;                 //enemy piece
+ char p=player;                 //player piece
+ int m,n,val,poss= i*10+j;
+
+ for(m=j+2; m<9; m++){
+     if(mat[i][j+1]==e && mat[i][m]==p){
+         val=check_reps(poss_list, index,poss);
+         if(val==0){
+            poss_list[index]=poss;
+            index++;
+            break;
+         }
+     } else if(mat[i][m]=='.'){
+            break;
+     }
+ }
+
+for(m=j-2; m>0; m--){
+     if(mat[i][j-1]==e && mat[i][m]==p){
+         val=check_reps(poss_list, index,poss);
+         if(val==0){
+            poss_list[index]=poss;
+            index++;
+            break;
+         }
+     } else if(mat[i][m]=='.'){
+            break;
+     }
+ }
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

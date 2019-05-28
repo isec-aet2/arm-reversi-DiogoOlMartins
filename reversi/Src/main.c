@@ -77,7 +77,7 @@ volatile unsigned int flagLcd=0;
 volatile unsigned int flagToca=1;
 volatile unsigned int fl_gamestart=0;
 volatile unsigned int fl_gamestarted=0;
-bool jogador=true;
+int jogador=1;
 
 unsigned int min=0;
 
@@ -100,10 +100,10 @@ static void LCD_Config(void);
 void showTime(void);
 void touch_screen_config(void);
 void temp(void);
-void meteOndeTocaste(void);
+pfnode meteOndeTocaste(pfnode list);
 
 pfnode LCD_GameOn(pfnode list);
-void insereAs4inic(pfnode list);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -170,7 +170,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if (fl_gamestart==0) {
+	  //fl_gamestarted=1;//para teste
+/**/		if (fl_gamestart==0) {
 			fl_gamestarted=1;
 
 		} else {
@@ -183,7 +184,7 @@ int main(void)
 			if (timeFlag == 1)
 				showTime();
 			if (flagLcd == 1) {
-				meteOndeTocaste();
+				lista=meteOndeTocaste(lista);
 				flagToca = 1;
 			}
 		}
@@ -697,7 +698,7 @@ pfnode LCD_GameOn(pfnode list){
 		for(int j=0;j<8;j++){
 			int x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
 			posicao++;
-			list=addJogada(0,posicao,x,y,false,list);
+			list=addJogada(0,posicao,x,y,list);
 
 			BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
 			BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
@@ -712,7 +713,7 @@ pfnode LCD_GameOn(pfnode list){
 		}
 	  }
 
-	  insereAs4inic(list);
+	  insereAs4inic(list,jogador);
 	  return list;
 }
 
@@ -756,12 +757,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 
 
 
-void meteOndeTocaste(void){
+pfnode meteOndeTocaste(pfnode list){
 
 	HAL_Delay(200);
 	int tocouX = TS_State.touchX[0];
 	int tocouY = TS_State.touchY[0];
-	int possicao = 0;
+	int posicao = 0;
+	int y;
+	int x;
 
 
 	flagLcd = 0;
@@ -769,25 +772,31 @@ void meteOndeTocaste(void){
 	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
 	BSP_LCD_DrawCircle(tocouX, tocouY, 20);
 
-	for (int i = 0; i <= 8; i++) {
-		int x = (BSP_LCD_GetXSize() / 10) + i * QUADRADO; //
-		for (int j = 0; j <= 8; j++) {
-			possicao++;
-			int y = QUADRADO + j * QUADRADO;
-			if (tocouX<x && tocouX>limiteEsquerdo && tocouY<y && tocouY>QUADRADO) {
+	  for(int i=0;i<8;i++){
+		y=QUADRADO+i*QUADRADO;//
+		for(int j=0;j<8;j++){
+			x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
+			posicao++;
+			if (tocouX<x+QUADRADO && tocouX>limiteEsquerdo && tocouY<y+QUADRADO && tocouY>QUADRADO) {
 
 				//meter aqui condição de jogada valida
-				jogador=!jogador;
-				inserePeca(x-QUADRADO, y-QUADRADO,jogador);
-
-				return;
+				bool a=seraValida(list,posicao-8,jogador);
+				if(a==true){
+					if(jogador==1)
+						jogador=2;
+					else if(jogador==2)
+						jogador=1;
+					//meter a função que muda tudo
+					inserePeca(x,y,jogador);
+				return list;
+				}
 
 			}
 		}
 	}
 
 
-
+return list;//só para calar o warning
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
