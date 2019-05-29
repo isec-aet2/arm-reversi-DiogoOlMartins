@@ -5,6 +5,8 @@ jogadas.c:95:6:seraValida	40	static
 jogadas.c:125:8:getPosicao	40	static
 jogadas.c:142:5:verSeValidaVertical	40	static
 jogadas.c:174:5:verSeValidaHorizontal	40	static
-jogadas.c:205:5:verSeValidaDiagonalSubir	24	static
-jogadas.c:229:5:verSeValidaDiagonalDesc	24	static
-jogadas.c:256:6:mostraJogador	128	static
+jogadas.c:205:5:verSeValidaDiagonalSubir	40	static
+jogadas.c:235:5:verSeValidaDiagonalDesc	24	static
+jogadas.c:267:6:mostraJogador	136	static
+jogadas.c:307:6:checkIfGameEnded	32	static
+jogadas.c:343:6:sendToSd	120	static

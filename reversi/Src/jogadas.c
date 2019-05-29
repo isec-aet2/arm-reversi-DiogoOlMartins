@@ -101,9 +101,9 @@ bool seraValida(pfnode list,pfnode posicao,int player){//vai ver em todas as dir
 	bool valida=false;
 
 	if(player==1)
-		enemy=2;
-	else if(player==2)
 		enemy=1;
+	else if(player==2)
+		enemy=2;
 	validacoes+=verSeValidaHorizontal(auxlist,posicao,enemy);
 	auxlist=list;
 	validacoes+=verSeValidaVertical(auxlist,posicao,enemy);
@@ -154,11 +154,11 @@ int verSeValidaVertical(pfnode list,pfnode posicao, int enemy){
 			if(auxlist->posicaoX+QUADRADO+1>LIMITE_INFERIOR){
 				return 0;
 			}
-			if(auxlist->posicao==posicao->posicao+8 && auxlist->ja_jogada==true && auxlist->jogador==enemy){
+			if(auxlist->posicao==posicao->posicao+8*i && auxlist->ja_jogada==true && auxlist->jogador==enemy){
 
 				return 1;
 			}
-			if(auxlist->posicao==posicao->posicao-8 && auxlist->ja_jogada==true && auxlist->jogador==enemy){
+			if(auxlist->posicao==posicao->posicao-8*i && auxlist->ja_jogada==true && auxlist->jogador==enemy){
 
 				return 1;
 			}
@@ -185,11 +185,11 @@ int verSeValidaHorizontal(pfnode list,pfnode posicao, int enemy){
 				// que queremos, temos agora de ver se está a sair da matriz
 				return 0;
 			}
-			if(auxlist->posicao==posicao->posicao+i && auxlist->ja_jogada==true && auxlist->jogador==enemy){
+			if(auxlist->posicao==posicao->posicao+i*1 && auxlist->ja_jogada==true ){
 
 				return 1;
 			}
-			if(auxlist->posicao==posicao->posicao-i && auxlist->ja_jogada==true && auxlist->jogador==enemy){
+			if(auxlist->posicao==posicao->posicao-i*1 && auxlist->ja_jogada==true ){
 
 				return 1;
 			}
@@ -203,17 +203,25 @@ int verSeValidaHorizontal(pfnode list,pfnode posicao, int enemy){
 }
 
 int verSeValidaDiagonalSubir(pfnode list,pfnode posicao, int enemy){
-/*
 	pfnode auxlist=list;
 
-	for(int i=0;i<TAMMATRIZ ;i++){
+	for(int i=1;i<TAMMATRIZ ;i++){
 		auxlist=list;
 		while(auxlist!=NULL){
-			if(auxlist->posicao==posicao->posicao+i*7 && auxlist->ja_jogada==true){
+
+			if(auxlist->posicaoY!=posicao->posicaoY && auxlist->posicaoX!=posicao->posicaoX){//se não estiver na linha que queremos
+				auxlist=auxlist->next;
+				continue;
+			}
+			if(auxlist->posicaoX+QUADRADO+1>LIMITE_DIREITO){ //se está aqui é porque está na linha
+				// que queremos, temos agora de ver se está a sair da matriz
+				return 0;
+			}
+			if(auxlist->posicao==posicao->posicao+7 && auxlist->ja_jogada==true){
 
 				return 1;
 			}
-			if(auxlist->posicao==posicao->posicao-i*7 && auxlist->ja_jogada==true){
+			if(auxlist->posicao==posicao->posicao-7 && auxlist->ja_jogada==true){
 
 				return 1;
 			}
@@ -221,8 +229,6 @@ int verSeValidaDiagonalSubir(pfnode list,pfnode posicao, int enemy){
 				auxlist=auxlist->next;
 		}
 	}
-*/
-
 	return 0;
 }
 
@@ -230,14 +236,19 @@ int verSeValidaDiagonalDesc(pfnode list,pfnode posicao, int enemy){
 /*
 	pfnode auxlist=list;
 
-	for(int i=0;i<TAMMATRIZ ;i++){
+	for(int i=1;i<TAMMATRIZ ;i++){
 		auxlist=list;
 		while(auxlist!=NULL){
-			if(auxlist->posicao==posicao->posicao+i*9 && auxlist->ja_jogada==true){
+
+			if(auxlist->posicaoX+QUADRADO+1>LIMITE_DIREITO){ //se está aqui é porque está na linha
+				// que queremos, temos agora de ver se está a sair da matriz
+				return 0;
+			}
+			if(auxlist->posicao==posicao->posicao+9 && auxlist->ja_jogada==true && auxlist->jogador==enemy){
 
 				return 1;
 			}
-			if(auxlist->posicao==posicao->posicao-i*9 && auxlist->ja_jogada==true){
+			if(auxlist->posicao==posicao->posicao-9 && auxlist->ja_jogada==true && auxlist->jogador==enemy){
 
 				return 1;
 			}
@@ -255,19 +266,35 @@ int verSeValidaDiagonalDesc(pfnode list,pfnode posicao, int enemy){
 
 void mostraJogador(int jogador){
 
-	char desc[100];
+	char desc[100]="Jogador";
 
-	if(jogador==1){
+	BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
+	BSP_LCD_FillRect(QUADRADO*13+(QUADRADO/2), QUADRADO*3.5, QUADRADO, QUADRADO);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_DrawRect(QUADRADO*13+(QUADRADO/2), QUADRADO*3.5, QUADRADO, QUADRADO);
+	BSP_LCD_DrawRect(QUADRADO*13+(QUADRADO/2), QUADRADO*3.5, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
+	BSP_LCD_DrawRect(QUADRADO*13-1+(QUADRADO/2),QUADRADO*3.5, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
-			sprintf(desc, "Jogador: %d", jogador);
-			BSP_LCD_DisplayStringAt(QUADRADO*10,QUADRADO*4, (uint8_t *) desc, LEFT_MODE);
-			BSP_LCD_ClearStringLine(BSP_LCD_GetXSize()-170);
-	}
+
 	if(jogador==2){
 
-		sprintf(desc, "Jogador: %d", jogador);
-		BSP_LCD_DisplayStringAt(QUADRADO*10,QUADRADO*4, (uint8_t *) desc, LEFT_MODE);
-		BSP_LCD_ClearStringLine(BSP_LCD_GetXSize()-170);
+		BSP_LCD_DisplayStringAt(QUADRADO*11,QUADRADO*3.75, (uint8_t *) desc, LEFT_MODE);
+
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+		BSP_LCD_DrawCircle(QUADRADO*14,QUADRADO*4, QUADRADO/2-TAMMATRIZ );
+		BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		BSP_LCD_FillCircle(QUADRADO*14,QUADRADO*4, QUADRADO/2-9);
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+
+	}
+	if(jogador==1){
+
+		BSP_LCD_DisplayStringAt(QUADRADO*11,QUADRADO*3.75, (uint8_t *) desc, LEFT_MODE);
+
+		BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		BSP_LCD_DrawCircle(QUADRADO*14, QUADRADO*4, QUADRADO/2-TAMMATRIZ );
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+		BSP_LCD_FillCircle(QUADRADO*14, QUADRADO*4, QUADRADO/2-9);
 
 	}
 
@@ -277,9 +304,70 @@ void mostraJogador(int jogador){
 
 
 
+void checkIfGameEnded(pfnode list){
 
+	pfnode auxlist=list;
+	int count=0;
+	int countplayer1=0;
+	int countplayer2=0;
 
+	while(auxlist!=NULL){
 
+		if(auxlist->ja_jogada==true)
+			count++;
+		if(auxlist->jogador==1)
+			countplayer1++;
+
+		if(auxlist->jogador==2)
+			countplayer2++;
+
+		count=60;
+		countplayer1=10;
+		countplayer2=11;
+		if(count>=60){
+
+			if(countplayer2>countplayer1){
+				sendToSd(2,countplayer2);
+			}else if(countplayer2<countplayer1){
+				sendToSd(1,countplayer1);
+			}else
+				sendToSd(0,countplayer1);
+			fazerReset();
+
+		}
+		auxlist=auxlist->next;
+
+	}
+}
+
+void sendToSd(int jog, int a){
+
+	char strings[100];
+	uint n;
+	if(jog==1){
+	sprintf(strings,"player 1 ganhou com %d pontos \n",a);
+	}
+	if(jog==2){
+	sprintf(strings,"player 2 ganhou com %d pontos \n",a);
+	}
+	if(jog==0){
+	sprintf(strings,"empate com %d pontos \n",a);
+	}
+
+	if (f_mount(&SDFatFS, SDPath, 0) != FR_OK){
+		Error_Handler();
+	}
+
+	if (f_open(&SDFile, "reversi.txt", FA_CREATE_ALWAYS | FA_WRITE ) != FR_OK){
+		Error_Handler();
+	}
+
+		f_write(&SDFile, strings, strlen(strings), &n);
+		f_close(&SDFile);
+
+/**/
+
+}
 
 
 

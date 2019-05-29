@@ -14,6 +14,8 @@
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery.h"
 #include "stm32f769i_discovery_ts.h"
+#include "fatfs.h"
+
 
 //defines
 #define TAMMATRIZ 8
@@ -57,6 +59,10 @@ int verSeValidaVertical(pfnode auxlist,pfnode posicao, int enemy);
 int verSeValidaDiagonalSubir(pfnode auxlist,pfnode posicao, int enemy);
 int verSeValidaDiagonalDesc(pfnode auxlist,pfnode posicao, int enemy);
 void mostraJogador(int jogador);
+void checkIfGameEnded(pfnode list);
+void fazerReset();
+void sendToSd(int jog, int a);
+
 
 #endif /* JOGADAS_H_ */
 

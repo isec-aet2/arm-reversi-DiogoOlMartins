@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
@@ -64,6 +65,8 @@ DSI_HandleTypeDef hdsi;
 
 LTDC_HandleTypeDef hltdc;
 
+SD_HandleTypeDef hsd2;
+
 TIM_HandleTypeDef htim6;
 
 SDRAM_HandleTypeDef hsdram1;
@@ -82,6 +85,7 @@ int tocouX =0;
 int tocouY =0;
 unsigned int min=0;
 unsigned int reset=0;
+char a[50];
 TS_StateTypeDef TS_State; //coordenadas do ts
 pfnode list=NULL;
 
@@ -95,6 +99,7 @@ static void MX_DMA2D_Init(void);
 static void MX_DSIHOST_DSI_Init(void);
 static void MX_FMC_Init(void);
 static void MX_LTDC_Init(void);
+static void MX_SDMMC2_SD_Init(void);
 static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -129,7 +134,7 @@ int main(void)
   
 
   /* Enable I-Cache---------------------------------------------------------*/
-  SCB_EnableICache();
+    SCB_EnableICache();
 
   /* Enable D-Cache---------------------------------------------------------*/
   SCB_EnableDCache();
@@ -157,7 +162,9 @@ int main(void)
   MX_DSIHOST_DSI_Init();
   MX_FMC_Init();
   MX_LTDC_Init();
+  MX_SDMMC2_SD_Init();
   MX_TIM6_Init();
+  MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   //lcd enable
   LCD_Config();
@@ -183,6 +190,8 @@ int main(void)
 		}else{
 			tocouX=LIMITE_ESQUERDO+4*QUADRADO;
 			tocouY=LIMITE_SUPERIOR+4*QUADRADO;
+			flagLcd = 0;
+			flagToca = 1;
 		}
 
 		//fl_gamestarted=1;//para teste
@@ -199,19 +208,19 @@ int main(void)
 					temp();
 				if (timeFlag == 1)
 					showTime();
-				mostraJogador(jogador);
+
 
 				if (flagLcd == 1) {
+
 					flagLcd = 0;
 					meteOndeTocaste();
 					flagToca = 1;
+					mostraJogador(jogador);
 				}
 
 		}
-
 		if(reset==1){
 			fazerReset();
-
 		}
 
 
@@ -245,7 +254,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 25;
   RCC_OscInitStruct.PLL.PLLN = 400;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -269,13 +278,16 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC|RCC_PERIPHCLK_SDMMC2
+                              |RCC_PERIPHCLK_CLK48;
   PeriphClkInitStruct.PLLSAI.PLLSAIN = 192;
   PeriphClkInitStruct.PLLSAI.PLLSAIR = 2;
   PeriphClkInitStruct.PLLSAI.PLLSAIQ = 2;
   PeriphClkInitStruct.PLLSAI.PLLSAIP = RCC_PLLSAIP_DIV2;
   PeriphClkInitStruct.PLLSAIDivQ = 1;
   PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_2;
+  PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
+  PeriphClkInitStruct.Sdmmc2ClockSelection = RCC_SDMMC2CLKSOURCE_CLK48;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -563,6 +575,34 @@ static void MX_LTDC_Init(void)
 }
 
 /**
+  * @brief SDMMC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SDMMC2_SD_Init(void)
+{
+
+  /* USER CODE BEGIN SDMMC2_Init 0 */
+
+  /* USER CODE END SDMMC2_Init 0 */
+
+  /* USER CODE BEGIN SDMMC2_Init 1 */
+
+  /* USER CODE END SDMMC2_Init 1 */
+  hsd2.Instance = SDMMC2;
+  hsd2.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
+  hsd2.Init.ClockBypass = SDMMC_CLOCK_BYPASS_DISABLE;
+  hsd2.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
+  hsd2.Init.BusWide = SDMMC_BUS_WIDE_1B;
+  hsd2.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
+  hsd2.Init.ClockDiv = 0;
+  /* USER CODE BEGIN SDMMC2_Init 2 */
+
+  /* USER CODE END SDMMC2_Init 2 */
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -659,8 +699,8 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
@@ -670,6 +710,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : PI13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PI15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
 
@@ -691,7 +737,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void showTime(void){
 
-	char a[50];
+
 
 	sprintf(a,"Time:%02d:%02d",min,segundos);
 if(segundos>60){
@@ -805,11 +851,16 @@ void meteOndeTocaste(void){
 
 	bool a=seraValida(auxlist,tocouAqui,jogador);
 	if(a==true){
+		if(jogador==1)
+			jogador=2;
+		else if(jogador==2)
+			jogador=1;
 		tocouAqui->ja_jogada=true;
 		inserePeca(tocouAqui->posicaoX,tocouAqui->posicaoY,jogador);
 	}else
 		return;
 
+	checkIfGameEnded(list);
 
 }
 
@@ -826,11 +877,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 
 			BSP_TS_GetState(&TS_State);
 			fl_gamestart=1;
-
-			if(jogador==1)
-				jogador=2;
-			else if(jogador==2)
-				jogador=1;
 
 		}
 	}
@@ -865,6 +911,11 @@ void fazerReset(void){
   */
 void Error_Handler(void)
 {
+	BSP_LED_Init(LED1);
+	while(1){
+		HAL_Delay(1000);
+		BSP_LED_Toggle(LED1);
+	}
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
 
