@@ -78,10 +78,11 @@ volatile unsigned int flagToca=1;
 volatile unsigned int fl_gamestart=0;
 volatile unsigned int fl_gamestarted=0;
 int jogador=1;
-
+int tocouX =0;
+int tocouY =0;
 unsigned int min=0;
-
 TS_StateTypeDef TS_State; //coordenadas do ts
+pfnode list=NULL;
 
 /* USER CODE END PV */
 
@@ -96,13 +97,12 @@ static void MX_LTDC_Init(void);
 static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
-static void LCD_Config(void);
+void LCD_Config(void);
 void showTime(void);
 void touch_screen_config(void);
 void temp(void);
-pfnode meteOndeTocaste(pfnode list);
-
-pfnode LCD_GameOn(pfnode list);
+void meteOndeTocaste(void);
+void LCD_GameOn(void);
 
 /* USER CODE END PFP */
 
@@ -120,7 +120,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	pfnode lista=NULL;
+
+
 
   /* USER CODE END 1 */
   
@@ -170,13 +171,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  tocouX = TS_State.touchX[0];
+	  tocouY = TS_State.touchY[0];
+
+	  if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO && tocouY > LIMITE_SUPERIOR
+	  					&& tocouY < LIMITE_INFERIOR && flagToca==0) {
+		  flagLcd=1;
+	  }
+
+
+
 	  //fl_gamestarted=1;//para teste
 /**/		if (fl_gamestart==0) {
 			fl_gamestarted=1;
 
 		} else {
 			if(fl_gamestarted==1){
-				lista=LCD_GameOn(lista);
+				LCD_GameOn();
 				fl_gamestarted=0;
 			}
 			if (TEMPFLAG >= 2)
@@ -184,7 +195,8 @@ int main(void)
 			if (timeFlag == 1)
 				showTime();
 			if (flagLcd == 1) {
-				lista=meteOndeTocaste(lista);
+				flagLcd=0;
+				meteOndeTocaste();
 				flagToca = 1;
 			}
 		}
@@ -689,7 +701,7 @@ void temp(void) {
 	TEMPFLAG=0;
 }
 
-pfnode LCD_GameOn(pfnode list){
+void LCD_GameOn(void){
 
 	int posicao=0;
 
@@ -698,7 +710,7 @@ pfnode LCD_GameOn(pfnode list){
 		for(int j=0;j<8;j++){
 			int x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
 			posicao++;
-			list=addJogada(0,posicao,x,y,list);
+			list=addJogada(false,posicao,x,y,list);
 
 			BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
 			BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
@@ -707,17 +719,17 @@ pfnode LCD_GameOn(pfnode list){
 			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
 			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
-			//char a[50];
-			//sprintf(a,"%d",posicao);
-			//BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);
+			char a[50];
+			sprintf(a,"%d",posicao);
+			BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);
 		}
 	  }
 
 	  insereAs4inic(list,jogador);
-	  return list;
+
 }
 
-static void LCD_Config(void)
+void LCD_Config(void)
 {
   uint32_t  lcd_status = LCD_OK;
 
@@ -757,46 +769,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 
 
 
-pfnode meteOndeTocaste(pfnode list){
+void meteOndeTocaste(void){
+
+	pfnode auxlist=list;
+	pfnode tocouAqui=NULL;
 
 	HAL_Delay(200);
-	int tocouX = TS_State.touchX[0];
-	int tocouY = TS_State.touchY[0];
-	int posicao = 0;
-	int y;
-	int x;
 
+		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+		BSP_LCD_DrawCircle(tocouX, tocouY, 20);
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 
-	flagLcd = 0;
-
-	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-	BSP_LCD_DrawCircle(tocouX, tocouY, 20);
-
-	  for(int i=0;i<8;i++){
-		y=QUADRADO+i*QUADRADO;//
-		for(int j=0;j<8;j++){
-			x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
-			posicao++;
-			if (tocouX<x+QUADRADO && tocouX>limiteEsquerdo && tocouY<y+QUADRADO && tocouY>QUADRADO) {
-
-				//meter aqui condição de jogada valida
-				bool a=seraValida(list,posicao-8,jogador);
-				if(a==true){
-					if(jogador==1)
-						jogador=2;
-					else if(jogador==2)
-						jogador=1;
-					//meter a função que muda tudo
-					inserePeca(x,y,jogador);
-				return list;
-				}
-
-			}
-		}
+	tocouAqui=getPosicao(auxlist,tocouX,tocouY);
+	if(tocouAqui->ja_jogada==false){
+		tocouAqui->ja_jogada=true;
+		inserePeca(tocouAqui->posicaoX,tocouAqui->posicaoY,jogador);
 	}
 
 
-return list;//só para calar o warning
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
@@ -807,8 +797,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 		if (GPIO_Pin == GPIO_PIN_13) {
 
 			BSP_TS_GetState(&TS_State);
-			flagLcd = 1;
 			fl_gamestart=1;
+
+			if(jogador==1)
+				jogador=2;
+			else if(jogador==2)
+				jogador=1;
 
 		}
 	}

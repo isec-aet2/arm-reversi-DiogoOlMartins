@@ -1,9 +1,9 @@
 jogadas.c:14:8:addJogada	144	static
-jogadas.c:51:6:insereAs4inic	24	static
-jogadas.c:72:6:inserePeca	32	static
-jogadas.c:93:6:seraValida	40	static
-jogadas.c:121:8:getPosicao	24	static
-jogadas.c:135:5:verSeValidaHorizontal	24	static
-jogadas.c:166:5:verSeValidaVertical	48	static
-jogadas.c:193:5:verSeValidaDiagonalSubir	32	static
-jogadas.c:205:5:verSeValidaDiagonalDesc	32	static
+jogadas.c:52:6:insereAs4inic	24	static
+jogadas.c:74:6:inserePeca	32	static
+jogadas.c:95:6:seraValida	40	static
+jogadas.c:125:8:getPosicao	40	static
+jogadas.c:142:5:verSeValidaHorizontal	24	static
+jogadas.c:151:5:verSeValidaVertical	24	static
+jogadas.c:157:5:verSeValidaDiagonalSubir	24	static
+jogadas.c:163:5:verSeValidaDiagonalDesc	24	static
