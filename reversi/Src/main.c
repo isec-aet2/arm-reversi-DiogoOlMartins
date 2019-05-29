@@ -81,6 +81,7 @@ int jogador=1;
 int tocouX =0;
 int tocouY =0;
 unsigned int min=0;
+unsigned int reset=0;
 TS_StateTypeDef TS_State; //coordenadas do ts
 pfnode list=NULL;
 
@@ -103,6 +104,7 @@ void touch_screen_config(void);
 void temp(void);
 void meteOndeTocaste(void);
 void LCD_GameOn(void);
+void fazerReset(void);
 
 /* USER CODE END PFP */
 
@@ -171,37 +173,46 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  tocouX = TS_State.touchX[0];
-	  tocouY = TS_State.touchY[0];
+		tocouX = TS_State.touchX[0];
+		tocouY = TS_State.touchY[0];
 
-	  if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO && tocouY > LIMITE_SUPERIOR
-	  					&& tocouY < LIMITE_INFERIOR && flagToca==0) {
-		  flagLcd=1;
-	  }
-
-
-
-	  //fl_gamestarted=1;//para teste
-/**/		if (fl_gamestart==0) {
-			fl_gamestarted=1;
-
-		} else {
-			if(fl_gamestarted==1){
-				LCD_GameOn();
-				fl_gamestarted=0;
-			}
-			if (TEMPFLAG >= 2)
-				temp();
-			if (timeFlag == 1)
-				showTime();
-			if (flagLcd == 1) {
-				flagLcd=0;
-				meteOndeTocaste();
-				flagToca = 1;
-			}
+		if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO
+				&& tocouY > LIMITE_SUPERIOR && tocouY < LIMITE_INFERIOR
+				&& flagToca == 0) {
+			flagLcd = 1;
+		}else{
+			tocouX=LIMITE_ESQUERDO+4*QUADRADO;
+			tocouY=LIMITE_SUPERIOR+4*QUADRADO;
 		}
 
+		//fl_gamestarted=1;//para teste
 
+		if (fl_gamestart == 0) {
+			fl_gamestarted = 1;
+
+		} else {
+			if (fl_gamestarted == 1) {
+				LCD_GameOn();
+				fl_gamestarted = 0;
+				}
+				if (TEMPFLAG >= 2)
+					temp();
+				if (timeFlag == 1)
+					showTime();
+				mostraJogador(jogador);
+
+				if (flagLcd == 1) {
+					flagLcd = 0;
+					meteOndeTocaste();
+					flagToca = 1;
+				}
+
+		}
+
+		if(reset==1){
+			fazerReset();
+
+		}
 
 
     /* USER CODE END WHILE */
@@ -653,6 +664,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOJ_CLK_ENABLE();
 
   /*Configure GPIO pin : PI13 */
@@ -661,7 +673,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -705,9 +726,9 @@ void LCD_GameOn(void){
 
 	int posicao=0;
 
-	  for(int i=0;i<8;i++){
+	  for(int i=0;i<TAMMATRIZ ;i++){
 		int y=QUADRADO+i*QUADRADO;//
-		for(int j=0;j<8;j++){
+		for(int j=0;j<TAMMATRIZ ;j++){
 			int x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
 			posicao++;
 			list=addJogada(false,posicao,x,y,list);
@@ -781,16 +802,23 @@ void meteOndeTocaste(void){
 		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 
 	tocouAqui=getPosicao(auxlist,tocouX,tocouY);
-	if(tocouAqui->ja_jogada==false){
+
+	bool a=seraValida(auxlist,tocouAqui,jogador);
+	if(a==true){
 		tocouAqui->ja_jogada=true;
 		inserePeca(tocouAqui->posicaoX,tocouAqui->posicaoY,jogador);
-	}
+	}else
+		return;
 
 
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 
+
+	if (GPIO_Pin == GPIO_PIN_0){		//interrupt do botao
+		reset=1;
+	}
 
 	 if(flagToca == 1) {
 		flagToca = 0;
@@ -806,6 +834,27 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 
 		}
 	}
+
+}
+
+
+
+void fazerReset(void){
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
+	reset=0;
+	ConvertedValue=0;
+	segundos=0;
+	timeFlag=0;
+	TEMPFLAG=0;
+	flagLcd=0;
+	flagToca=1;
+	fl_gamestart=0;
+	fl_gamestarted=0;
+	jogador=1;
+	tocouX =0;
+	tocouY =0;
+	min=0;
+	list=NULL;
 
 }
 /* USER CODE END 4 */

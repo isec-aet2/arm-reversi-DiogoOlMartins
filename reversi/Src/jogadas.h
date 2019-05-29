@@ -16,11 +16,13 @@
 #include "stm32f769i_discovery_ts.h"
 
 //defines
+#define TAMMATRIZ 8
 #define QUADRADO BSP_LCD_GetYSize()/10 //a mudar se o ecra for diferente
 #define LIMITE_ESQUERDO BSP_LCD_GetXSize() / 10
-#define LIMITE_DIREITO LIMITE_ESQUERDO+(9*QUADRADO)
+#define LIMITE_DIREITO LIMITE_ESQUERDO+(TAMMATRIZ*QUADRADO)
 #define LIMITE_SUPERIOR QUADRADO
 #define LIMITE_INFERIOR BSP_LCD_GetYSize()-QUADRADO
+
 
 
 
@@ -48,13 +50,13 @@ void insereAs4inic(pfnode list,int jogador);
 void inserePeca(int a,int b,int jogador);
 
 pfnode getPosicao(pfnode list,int x, int y);
-bool seraValida(pfnode list,int posi,int jogador);
+bool seraValida(pfnode list,pfnode posicao,int player);
 
-int verSeValidaHorizontal(pfnode list,int posi,int jogador, int enemy);
-int verSeValidaVertical(pfnode list,int posi,int jogador, int enemy);
-int verSeValidaDiagonalSubir(pfnode list,int posi,int jogador, int enemy);
-int verSeValidaDiagonalDesc(pfnode list,int posi,int jogador, int enemy);
-
+int verSeValidaHorizontal(pfnode auxlist,pfnode posicao, int enemy);
+int verSeValidaVertical(pfnode auxlist,pfnode posicao, int enemy);
+int verSeValidaDiagonalSubir(pfnode auxlist,pfnode posicao, int enemy);
+int verSeValidaDiagonalDesc(pfnode auxlist,pfnode posicao, int enemy);
+void mostraJogador(int jogador);
 
 #endif /* JOGADAS_H_ */
 
