@@ -1,0 +1,12 @@
+jogadas.c:14:8:addJogada	144	static
+jogadas.c:52:6:insereAs4inic	24	static
+jogadas.c:74:6:inserePeca	32	static
+jogadas.c:95:6:seraValida	40	static
+jogadas.c:125:8:getPosicao	40	static
+jogadas.c:142:5:verSeValidaVertical	40	static
+jogadas.c:174:5:verSeValidaHorizontal	40	static
+jogadas.c:205:5:verSeValidaDiagonalSubir	40	static
+jogadas.c:235:5:verSeValidaDiagonalDesc	24	static
+jogadas.c:267:6:mostraJogador	136	static
+jogadas.c:307:6:checkIfGameEnded	32	static
+jogadas.c:343:6:sendToSd	144	static
