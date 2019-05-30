@@ -13,7 +13,7 @@
 
 pfnode addJogada(bool validat,int posicao,int posicaox,int posicaoy,pfnode lista){
 
-	char erro[100];
+	char erro[SIZE];
 	pfnode auxLista=lista;
 
 	pfnode aux = malloc(sizeof(fnode));
@@ -266,7 +266,7 @@ int verSeValidaDiagonalDesc(pfnode list,pfnode posicao, int enemy){
 
 void mostraJogador(int jogador){
 
-	char desc[100]="Jogador";
+	char desc[SIZE]="Jogador";
 
 	BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
 	BSP_LCD_FillRect(QUADRADO*13+(QUADRADO/2), QUADRADO*3.5, QUADRADO, QUADRADO);
@@ -276,7 +276,7 @@ void mostraJogador(int jogador){
 	BSP_LCD_DrawRect(QUADRADO*13-1+(QUADRADO/2),QUADRADO*3.5, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
 
-	if(jogador==2){
+	if(jogador==1){
 
 		BSP_LCD_DisplayStringAt(QUADRADO*11,QUADRADO*3.75, (uint8_t *) desc, LEFT_MODE);
 
@@ -287,7 +287,7 @@ void mostraJogador(int jogador){
 		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 
 	}
-	if(jogador==1){
+	if(jogador==2){
 
 		BSP_LCD_DisplayStringAt(QUADRADO*11,QUADRADO*3.75, (uint8_t *) desc, LEFT_MODE);
 
@@ -304,7 +304,7 @@ void mostraJogador(int jogador){
 
 
 
-void checkIfGameEnded(pfnode list){
+void checkIfGameEnded(pfnode list, char b[SIZE]){
 
 	pfnode auxlist=list;
 	int count=0;
@@ -323,16 +323,16 @@ void checkIfGameEnded(pfnode list){
 
 		count=60;
 		countplayer1=10;
-		countplayer2=11;
+		countplayer2=10;
 		if(count>=60){
 
 			if(countplayer2>countplayer1){
-				sendToSd(2,countplayer2);
+				sendToSd(2,countplayer2,b);
 			}else if(countplayer2<countplayer1){
-				sendToSd(1,countplayer1);
+				sendToSd(1,countplayer1,b);
 			}else
-				sendToSd(0,countplayer1);
-			fazerReset();
+				sendToSd(0,countplayer1,b);
+			//fazerReset();
 
 		}
 		auxlist=auxlist->next;
@@ -340,32 +340,40 @@ void checkIfGameEnded(pfnode list){
 	}
 }
 
-void sendToSd(int jog, int a){
+void sendToSd(int jog, int a ,char b[SIZE]){
 
-	char strings[100];
+	char strings[SIZE];
 	uint n;
 	if(jog==1){
-	sprintf(strings,"player 1 ganhou com %d pontos \n",a);
+	sprintf(strings,"\n player 1 ganhou com %d pontos ",a);
+	strcat(strings,b);
 	}
 	if(jog==2){
-	sprintf(strings,"player 2 ganhou com %d pontos \n",a);
+	sprintf(strings,"\n player 2 ganhou com %d pontos ",a);
+	strcat(strings,b);
 	}
 	if(jog==0){
-	sprintf(strings,"empate com %d pontos \n",a);
+	sprintf(strings,"\n empate com %d pontos ",a);
+	strcat(strings,b);
 	}
 
 	if (f_mount(&SDFatFS, SDPath, 0) != FR_OK){
 		Error_Handler();
 	}
 
-	if (f_open(&SDFile, "reversi.txt", FA_CREATE_ALWAYS | FA_WRITE ) != FR_OK){
+	if (f_open(&SDFile, "reversi.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
+		Error_Handler();
+	}
+	int x=strlen(strings)*sizeof(char);
+	if(f_write(&SDFile, strings, x, &n) != FR_OK){
 		Error_Handler();
 	}
 
-		f_write(&SDFile, strings, strlen(strings), &n);
-		f_close(&SDFile);
+	f_close(&SDFile);
 
-/**/
+
+
+
 
 }
 

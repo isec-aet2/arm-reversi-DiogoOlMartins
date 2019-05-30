@@ -19,11 +19,17 @@
 
 //defines
 #define TAMMATRIZ 8
-#define QUADRADO BSP_LCD_GetYSize()/10 //a mudar se o ecra for diferente
-#define LIMITE_ESQUERDO BSP_LCD_GetXSize() / 10
+#define TAMLCDX BSP_LCD_GetXSize()
+#define TAMLCDY BSP_LCD_GetYSize()
+#define QUADRADO TAMLCDY/10 //a mudar se o ecra for diferente
+#define CENTROX TAMLCDX/2
+#define CENTROY TAMLCDY/2
+#define LIMITE_ESQUERDO TAMLCDX / 10
 #define LIMITE_DIREITO LIMITE_ESQUERDO+(TAMMATRIZ*QUADRADO)
 #define LIMITE_SUPERIOR QUADRADO
-#define LIMITE_INFERIOR BSP_LCD_GetYSize()-QUADRADO
+#define LIMITE_INFERIOR TAMLCDY-QUADRADO
+#define SIZE 100
+
 
 
 
@@ -59,9 +65,10 @@ int verSeValidaVertical(pfnode auxlist,pfnode posicao, int enemy);
 int verSeValidaDiagonalSubir(pfnode auxlist,pfnode posicao, int enemy);
 int verSeValidaDiagonalDesc(pfnode auxlist,pfnode posicao, int enemy);
 void mostraJogador(int jogador);
-void checkIfGameEnded(pfnode list);
+void checkIfGameEnded(pfnode list, char b[SIZE]);
 void fazerReset();
-void sendToSd(int jog, int a);
+void sendToSd(int jog, int a ,char b[SIZE]);
+void menuInicial(void);
 
 
 #endif /* JOGADAS_H_ */

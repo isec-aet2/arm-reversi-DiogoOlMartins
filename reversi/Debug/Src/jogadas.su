@@ -9,4 +9,4 @@ jogadas.c:205:5:verSeValidaDiagonalSubir	40	static
 jogadas.c:235:5:verSeValidaDiagonalDesc	24	static
 jogadas.c:267:6:mostraJogador	136	static
 jogadas.c:307:6:checkIfGameEnded	32	static
-jogadas.c:343:6:sendToSd	120	static
+jogadas.c:343:6:sendToSd	136	static

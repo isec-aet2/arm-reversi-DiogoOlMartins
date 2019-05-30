@@ -80,14 +80,20 @@ volatile unsigned int flagLcd=0;
 volatile unsigned int flagToca=1;
 volatile unsigned int fl_gamestart=0;
 volatile unsigned int fl_gamestarted=0;
+volatile unsigned int japassouaqui=0;
+volatile unsigned int japassouaqui1=0;//fl_gamestart
 int jogador=1;
 int tocouX =0;
+int tocouXAnterior=0;
 int tocouY =0;
 unsigned int min=0;
 unsigned int reset=0;
-char a[50];
+char a[SIZE];
+
 TS_StateTypeDef TS_State; //coordenadas do ts
 pfnode list=NULL;
+unsigned int menuFlag=1;
+
 
 /* USER CODE END PV */
 
@@ -180,54 +186,47 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		tocouX = TS_State.touchX[0];
-		tocouY = TS_State.touchY[0];
 
-		if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO
-				&& tocouY > LIMITE_SUPERIOR && tocouY < LIMITE_INFERIOR
-				&& flagToca == 0) {
-			flagLcd = 1;
-		}else{
-			tocouX=LIMITE_ESQUERDO+4*QUADRADO;
-			tocouY=LIMITE_SUPERIOR+4*QUADRADO;
-			flagLcd = 0;
-			flagToca = 1;
-		}
 
-		//fl_gamestarted=1;//para teste
+	  if(flagToca==1){
+		  HAL_Delay(200);
+		  flagToca=0;
+	  }
 
-		if (fl_gamestart == 0) {
-			fl_gamestarted = 1;
+	  menuInicial();
 
-		} else {
-			if (fl_gamestarted == 1) {
+		if (TEMPFLAG >= 2)
+			temp();
+		if (timeFlag == 1)
+			showTime();
+
+		if(fl_gamestart==1){
+
+			if(japassouaqui1==0){
+				japassouaqui1=1;
 				LCD_GameOn();
-				fl_gamestarted = 0;
-				}
-				if (TEMPFLAG >= 2)
-					temp();
-				if (timeFlag == 1)
-					showTime();
+				mostraJogador(jogador);
+				fl_gamestart=0;
+				fl_gamestarted=1;
+			}
 
-
-				if (flagLcd == 1) {
-
-					flagLcd = 0;
-					meteOndeTocaste();
-					flagToca = 1;
-					mostraJogador(jogador);
-				}
+			meteOndeTocaste();
 
 		}
+
 		if(reset==1){
-			fazerReset();
-		}
+					fazerReset();
+				}
 
 
+
+
+
+	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 
@@ -752,7 +751,7 @@ if(segundos>60){
 void temp(void) {
 
 	long int JTemp;
-	char desc[100];
+	char desc[SIZE];
 
 
 	HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc1, TEMP_REFRESH_PERIOD);
@@ -772,6 +771,8 @@ void LCD_GameOn(void){
 
 	int posicao=0;
 
+	BSP_LCD_Clear(LCD_COLOR_BLUE);
+
 	  for(int i=0;i<TAMMATRIZ ;i++){
 		int y=QUADRADO+i*QUADRADO;//
 		for(int j=0;j<TAMMATRIZ ;j++){
@@ -786,14 +787,13 @@ void LCD_GameOn(void){
 			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
 			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
-			char a[50];
+/*			char a[SIZE];
 			sprintf(a,"%d",posicao);
-			BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);
+			BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);*/
 		}
 	  }
 
 	  insereAs4inic(list,jogador);
-
 }
 
 void LCD_Config(void)
@@ -841,16 +841,24 @@ void meteOndeTocaste(void){
 	pfnode auxlist=list;
 	pfnode tocouAqui=NULL;
 
-	HAL_Delay(200);
 
-		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+	tocouX = TS_State.touchX[0];
+	tocouY = TS_State.touchY[0];
+
+	if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO && tocouY > LIMITE_SUPERIOR && tocouY < LIMITE_INFERIOR && tocouX!=tocouXAnterior){
+
+		tocouXAnterior=tocouX;
+		mostraJogador(jogador);
+		HAL_Delay(200);
+
+/*		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
 		BSP_LCD_DrawCircle(tocouX, tocouY, 20);
-		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);*/
 
 	tocouAqui=getPosicao(auxlist,tocouX,tocouY);
 
-	bool a=seraValida(auxlist,tocouAqui,jogador);
-	if(a==true){
+	bool sera=seraValida(auxlist,tocouAqui,jogador);
+	if(sera==true){
 		if(jogador==1)
 			jogador=2;
 		else if(jogador==2)
@@ -860,8 +868,10 @@ void meteOndeTocaste(void){
 	}else
 		return;
 
-	checkIfGameEnded(list);
-
+	checkIfGameEnded(list, a);
+	}
+	else
+		return;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
@@ -871,19 +881,109 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 		reset=1;
 	}
 
-	 if(flagToca == 1) {
-		flagToca = 0;
+	 if(flagToca == 0) {
+		flagToca = 1;
 		if (GPIO_Pin == GPIO_PIN_13) {
 
 			BSP_TS_GetState(&TS_State);
-			fl_gamestart=1;
-
 		}
 	}
 
 }
 
 
+void menuInicial(void){
+	char reversi [SIZE]={"REVERSI"};
+	char gameStart[SIZE]={"START GAME"};
+	char playerVSplayer[SIZE]={"2 PLAYERS"};
+	char playerVSai[SIZE]={"VS AI"};
+
+	tocouX = TS_State.touchX[0];
+	tocouY = TS_State.touchY[0];
+
+
+	// verifica se carregou no start game
+	if (tocouX > CENTROX - QUADRADO * 2
+			&& tocouX < CENTROX - QUADRADO * 2 + QUADRADO * 4
+			&& tocouY > QUADRADO * 4 && tocouY < QUADRADO * 5
+			&& flagToca == 0) {
+		menuFlag=3;
+	}else if (tocouX > QUADRADO && tocouX < QUADRADO * 4 && tocouY > QUADRADO - 15
+				&& tocouY < QUADRADO - 15 + QUADRADO && flagToca == 0)	//verifica se carregou no 2 players
+		{
+
+			menuFlag=2;
+			fl_gamestart=1;
+
+		}
+
+
+	switch(menuFlag){
+
+	case 1:
+
+		BSP_LCD_Clear(LCD_COLOR_BLUE);
+		BSP_LCD_SetFont(&Font24);
+		BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
+
+
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2-1, QUADRADO-15-1, QUADRADO*4+1, QUADRADO+1);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2-2, QUADRADO-15-2, QUADRADO*4+2, QUADRADO+2);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2+1, QUADRADO-15+1, QUADRADO*4-1, QUADRADO-1);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2+2, QUADRADO-15+2, QUADRADO*4-2, QUADRADO-2);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2, QUADRADO-15, QUADRADO*4, QUADRADO);
+
+		BSP_LCD_DisplayStringAt(0,QUADRADO, (uint8_t *) reversi, CENTER_MODE);
+
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2-1, QUADRADO*4-15-1, QUADRADO*4+1, QUADRADO+1);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2-2, QUADRADO*4-15-2, QUADRADO*4+2, QUADRADO+2);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2+1, QUADRADO*4-15+1, QUADRADO*4-1, QUADRADO-1);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2+2, QUADRADO*4-15+2, QUADRADO*4-2, QUADRADO-2);
+		BSP_LCD_DrawRect(CENTROX-QUADRADO*2, QUADRADO*4-15, QUADRADO*4, QUADRADO);
+
+		BSP_LCD_DisplayStringAt(0,QUADRADO*4, (uint8_t *) gameStart, CENTER_MODE);
+
+		BSP_LCD_DrawRect(QUADRADO/2,QUADRADO/2,TAMLCDX-QUADRADO,TAMLCDY-QUADRADO);
+
+		menuFlag=2;
+		break;
+	case 2:
+
+		break;
+	case 3:
+
+		if(japassouaqui==0){
+			japassouaqui=1;
+		BSP_LCD_Clear(LCD_COLOR_BLUE);
+		BSP_LCD_SetFont(&Font24);
+		BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
+
+
+		BSP_LCD_DrawRect(QUADRADO+1, QUADRADO-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO+2, QUADRADO-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO-1, QUADRADO-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO-2, QUADRADO-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO, QUADRADO-15, QUADRADO*4, QUADRADO);
+
+		BSP_LCD_DisplayStringAt(QUADRADO+15,QUADRADO, (uint8_t *) playerVSplayer, LEFT_MODE);
+
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+1, QUADRADO-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+2, QUADRADO-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-1, QUADRADO-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-2, QUADRADO-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4, QUADRADO-15, QUADRADO*3, QUADRADO);
+
+		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4+15,QUADRADO, (uint8_t *) playerVSai, LEFT_MODE);
+
+		flagLcd=1;
+		menuFlag=2;
+		break;
+		}
+	}
+
+}
 
 void fazerReset(void){
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
