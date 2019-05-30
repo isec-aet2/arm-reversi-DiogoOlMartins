@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "fatfs.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -67,32 +67,40 @@ LTDC_HandleTypeDef hltdc;
 
 SD_HandleTypeDef hsd2;
 
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
 
 SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
-volatile uint32_t ConvertedValue;
-volatile unsigned int segundos=0;
-volatile unsigned int timeFlag=0;
-volatile unsigned int TEMPFLAG=0;
-volatile unsigned int flagLcd=0;
-volatile unsigned int flagToca=1;
-volatile unsigned int fl_gamestart=0;
-volatile unsigned int fl_gamestarted=0;
-volatile unsigned int japassouaqui=0;
-volatile unsigned int japassouaqui1=0;//fl_gamestart
-int jogador=1;
-int tocouX =0;
-int tocouXAnterior=0;
-int tocouY =0;
-unsigned int min=0;
-unsigned int reset=0;
+volatile uint32_t ConvertedValue = 0;
+volatile unsigned int segundos = 0;
+volatile unsigned int timeFlag = 0;
+volatile unsigned int TEMPFLAG = 0;
+volatile unsigned int timeout = 20;
+int timeoutCountPlayer1 = 3;
+int timeoutCountPlayer2 = 3;
+volatile unsigned int flagLcd = 0;
+volatile unsigned int flagToca = 1;
+volatile unsigned int fl_gamestart = 0;
+volatile unsigned int fl_gamestarted = 0;
+volatile unsigned int japassouaqui = 0;
+volatile unsigned int japassouaqui1 = 0; //fl_gamestart
+int jogador = 1;
+int tocouX = 0;
+int tocouXAnterior = 0;
+int tocouY = 0;
+unsigned int min = 0;
+unsigned int reset = 0;
 char a[SIZE];
+int comecarTimoeut = 0;
+unsigned int menuFlag = 1;
+pfnode list = NULL;
 
 TS_StateTypeDef TS_State; //coordenadas do ts
-pfnode list=NULL;
-unsigned int menuFlag=1;
+
+
 
 
 /* USER CODE END PV */
@@ -106,7 +114,9 @@ static void MX_DSIHOST_DSI_Init(void);
 static void MX_FMC_Init(void);
 static void MX_LTDC_Init(void);
 static void MX_SDMMC2_SD_Init(void);
+static void MX_TIM4_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
 
 void LCD_Config(void);
@@ -140,7 +150,7 @@ int main(void)
   
 
   /* Enable I-Cache---------------------------------------------------------*/
-    SCB_EnableICache();
+  SCB_EnableICache();
 
   /* Enable D-Cache---------------------------------------------------------*/
   SCB_EnableDCache();
@@ -169,7 +179,9 @@ int main(void)
   MX_FMC_Init();
   MX_LTDC_Init();
   MX_SDMMC2_SD_Init();
+  MX_TIM4_Init();
   MX_TIM6_Init();
+  MX_TIM7_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   //lcd enable
@@ -179,6 +191,7 @@ int main(void)
   //ts enable
   touch_screen_config();
   HAL_TIM_Base_Start_IT(&htim6);
+  HAL_TIM_Base_Start_IT(&htim7);
 
   /* USER CODE END 2 */
 
@@ -187,36 +200,40 @@ int main(void)
   while (1)
   {
 
+		if (flagToca == 1) {
+			HAL_Delay(200);
+			flagToca = 0;
+		}
 
-	  if(flagToca==1){
-		  HAL_Delay(200);
-		  flagToca=0;
-	  }
-
-	  menuInicial();
+		menuInicial();
 
 		if (TEMPFLAG >= 2)
 			temp();
 		if (timeFlag == 1)
 			showTime();
 
-		if(fl_gamestart==1){
+		if (fl_gamestart == 1) {
 
-			if(japassouaqui1==0){
-				japassouaqui1=1;
+			if (japassouaqui1 == 0) {
+				japassouaqui1 = 1;
 				LCD_GameOn();
 				mostraJogador(jogador);
-				fl_gamestart=0;
-				fl_gamestarted=1;
+				fl_gamestart = 0;
+				fl_gamestarted = 1;
+				comecarTimoeut=1;
+				timeout=20;
+
 			}
 
 			meteOndeTocaste();
 
 		}
 
-		if(reset==1){
-					fazerReset();
-				}
+		if (reset == 1) {
+			HAL_Delay(200);
+			fazerReset();
+
+		}
 
 
 
@@ -602,6 +619,51 @@ static void MX_SDMMC2_SD_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 0;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -636,6 +698,44 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 9999;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 9999;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
 
 }
 
@@ -736,15 +836,52 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void showTime(void){
 
-
-
+char c[SIZE];
+char d[SIZE];
 	sprintf(a,"Time:%02d:%02d",min,segundos);
+
+
 if(segundos>60){
 	min++;
 	segundos=0;
 }
 
-	BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170,(uint16_t)Font24.Height ,(uint8_t *)a, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4,(uint16_t)Font24.Height ,(uint8_t *)a, LEFT_MODE);
+
+
+	if(comecarTimoeut==1){
+		sprintf(d,"Timeout:%02d",timeout);
+		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4,(uint16_t)Font24.Height*2 ,(uint8_t *)d, LEFT_MODE);
+
+		if (timeout == 0) {
+			timeout = 20;
+			if (jogador == 1) {
+				timeoutCountPlayer1--;
+				jogador = 2;
+			} else if (jogador == 2) {
+				timeoutCountPlayer2--;
+				jogador = 1;
+			}
+
+		}
+
+		if (jogador == 1) {
+			sprintf(c,"Timeout's: %d",timeoutCountPlayer1);
+			BSP_LCD_DisplayStringAt(QUADRADO * 11, QUADRADO * 4.75,(uint8_t *) c, LEFT_MODE);
+		} else if (jogador == 2) {
+			sprintf(c,"Timeout's: %d",timeoutCountPlayer1);
+			BSP_LCD_DisplayStringAt(QUADRADO * 11, QUADRADO * 4.75,(uint8_t *) c, LEFT_MODE);
+		}
+
+		if(timeoutCountPlayer1<=0){
+			sendToSd(4,0,a);
+			fazerReset();
+		}else
+		if(timeoutCountPlayer2<=0){
+			sendToSd(5,0,a);
+			fazerReset();
+		}
+	}
 
 }
 
@@ -830,6 +967,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 		segundos++;
 		timeFlag=1;
 	}
+
+	if (htim->Instance == TIM7){
+		timeout--;
+	}
+
 }
 
 
@@ -986,22 +1128,32 @@ void menuInicial(void){
 }
 
 void fazerReset(void){
-	BSP_LCD_Clear(LCD_COLOR_WHITE);
-	reset=0;
-	ConvertedValue=0;
-	segundos=0;
-	timeFlag=0;
-	TEMPFLAG=0;
-	flagLcd=0;
-	flagToca=1;
-	fl_gamestart=0;
-	fl_gamestarted=0;
-	jogador=1;
-	tocouX =0;
-	tocouY =0;
-	min=0;
-	list=NULL;
+	ConvertedValue = 0;
+	segundos = 0;
+	timeFlag = 0;
+	TEMPFLAG = 0;
+	timeout = 20;
+	timeoutCountPlayer1 = 3;
+	timeoutCountPlayer2 = 3;
+	flagLcd = 0;
+	flagToca = 0;
+	fl_gamestart = 0;
+	fl_gamestarted = 0;
+	japassouaqui = 0;
+	japassouaqui1 = 0;
+	jogador = 1;
+	//tocouX = 0;
+	tocouXAnterior = 0;
+	//tocouY = 0;
+	min = 0;
+	reset = 0;
 
+	comecarTimoeut = 0;
+	menuFlag = 1;
+	free(list);
+	list = NULL;
+
+	NVIC_SystemReset();
 }
 /* USER CODE END 4 */
 
@@ -1011,11 +1163,6 @@ void fazerReset(void){
   */
 void Error_Handler(void)
 {
-	BSP_LED_Init(LED1);
-	while(1){
-		HAL_Delay(1000);
-		BSP_LED_Toggle(LED1);
-	}
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
 

@@ -321,9 +321,9 @@ void checkIfGameEnded(pfnode list, char b[SIZE]){
 		if(auxlist->jogador==2)
 			countplayer2++;
 
-		count=60;
-		countplayer1=10;
-		countplayer2=10;
+		//count=60;
+		//countplayer1=10;
+		//countplayer2=10;
 		if(count>=60){
 
 			if(countplayer2>countplayer1){
@@ -332,7 +332,7 @@ void checkIfGameEnded(pfnode list, char b[SIZE]){
 				sendToSd(1,countplayer1,b);
 			}else
 				sendToSd(0,countplayer1,b);
-			//fazerReset();
+			fazerReset();
 
 		}
 		auxlist=auxlist->next;
@@ -356,20 +356,29 @@ void sendToSd(int jog, int a ,char b[SIZE]){
 	sprintf(strings,"\n empate com %d pontos ",a);
 	strcat(strings,b);
 	}
+	if(jog==4){
+	sprintf(strings,"\n player 1 ganhou por timeout");
+	strcat(strings,b);
+	}
+	if(jog==5){
+	sprintf(strings,"\n player 1 ganhou por timeout");
+	strcat(strings,b);
+	}
+
 
 	if (f_mount(&SDFatFS, SDPath, 0) != FR_OK){
-		Error_Handler();
-	}
+			Error_Handler();
+		}
 
-	if (f_open(&SDFile, "reversi.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
-		Error_Handler();
-	}
-	int x=strlen(strings)*sizeof(char);
-	if(f_write(&SDFile, strings, x, &n) != FR_OK){
-		Error_Handler();
-	}
+		if (f_open(&SDFile, "reversi.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
+			Error_Handler();
+		}
+		int x=strlen(strings)*sizeof(char);
+		if(f_write(&SDFile, strings, x, &n) != FR_OK){
+			Error_Handler();
+		}
 
-	f_close(&SDFile);
+		f_close(&SDFile);
 
 
 

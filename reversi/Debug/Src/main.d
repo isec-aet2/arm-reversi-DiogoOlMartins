@@ -37,7 +37,13 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_sdmmc.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_tim_ex.h \
- ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dsi.h \
+ ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dsi.h ../Inc/fatfs.h \
+ ../Middlewares/Third_Party/FatFs/src/ff.h \
+ ../Middlewares/Third_Party/FatFs/src/integer.h ../Inc/ffconf.h \
+ ../Inc/main.h ../Inc/bsp_driver_sd.h ../Inc/fatfs_platform.h \
+ ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
+ ../Middlewares/Third_Party/FatFs/src/diskio.h \
+ ../Middlewares/Third_Party/FatFs/src/ff.h ../Inc/sd_diskio.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h \
  ../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h \
  ../Drivers/BSP/STM32F769I-Discovery/../Components/adv7533/adv7533.h \
@@ -50,13 +56,7 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h \
  ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/ft6x06.h \
  ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/../Common/ts.h \
- ../Src/jogadas.h ../Inc/fatfs.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h \
- ../Middlewares/Third_Party/FatFs/src/integer.h ../Inc/ffconf.h \
- ../Inc/main.h ../Inc/bsp_driver_sd.h ../Inc/fatfs_platform.h \
- ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
- ../Middlewares/Third_Party/FatFs/src/diskio.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h ../Inc/sd_diskio.h
+ ../Src/jogadas.h
 
 ../Inc/main.h:
 
@@ -138,6 +138,28 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dsi.h:
 
+../Inc/fatfs.h:
+
+../Middlewares/Third_Party/FatFs/src/ff.h:
+
+../Middlewares/Third_Party/FatFs/src/integer.h:
+
+../Inc/ffconf.h:
+
+../Inc/main.h:
+
+../Inc/bsp_driver_sd.h:
+
+../Inc/fatfs_platform.h:
+
+../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h:
+
+../Middlewares/Third_Party/FatFs/src/diskio.h:
+
+../Middlewares/Third_Party/FatFs/src/ff.h:
+
+../Inc/sd_diskio.h:
+
 ../Drivers/BSP/STM32F769I-Discovery/stm32f769i_discovery_lcd.h:
 
 ../Drivers/BSP/STM32F769I-Discovery/../Components/otm8009a/otm8009a.h:
@@ -163,25 +185,3 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 ../Drivers/BSP/STM32F769I-Discovery/../Components/ft6x06/../Common/ts.h:
 
 ../Src/jogadas.h:
-
-../Inc/fatfs.h:
-
-../Middlewares/Third_Party/FatFs/src/ff.h:
-
-../Middlewares/Third_Party/FatFs/src/integer.h:
-
-../Inc/ffconf.h:
-
-../Inc/main.h:
-
-../Inc/bsp_driver_sd.h:
-
-../Inc/fatfs_platform.h:
-
-../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h:
-
-../Middlewares/Third_Party/FatFs/src/diskio.h:
-
-../Middlewares/Third_Party/FatFs/src/ff.h:
-
-../Inc/sd_diskio.h:
