@@ -1,0 +1,8 @@
+jogadas.c:12:7:getPosicao	40	static
+jogadas.c:29:6:insereAs4inic	16	static
+jogadas.c:48:6:inserePeca	32	static
+jogadas.c:71:6:inserePosicaoPossivel	40	static
+jogadas.c:83:6:limpaPosicaoPossivel	32	static
+jogadas.c:96:5:jogouValida	40	static
+jogadas.c:113:6:mostraJogador	136	static
+jogadas.c:156:6:sendToSd	144	static
