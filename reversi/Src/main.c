@@ -31,6 +31,7 @@
 #include "stm32f769i_discovery.h"
 #include "stm32f769i_discovery_ts.h"
 #include "jogadas.h"
+#include "logotipo.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,6 +88,7 @@ volatile unsigned int fl_gamestart = 0;
 volatile unsigned int fl_gamestarted = 0;
 volatile unsigned int japassouaqui = 0;
 volatile unsigned int japassouaqui1 = 0; //fl_gamestart
+volatile unsigned int japassouaqui2 = 0; //ja passou no mostrar as possiveis
 int jogador = 1;
 int tocouX = 0;
 int tocouXAnterior = 0;
@@ -94,9 +96,16 @@ int tocouY = 0;
 unsigned int min = 0;
 unsigned int reset = 0;
 char a[SIZE];
+char c[SIZE];
+char d[SIZE];
 int comecarTimoeut = 0;
 unsigned int menuFlag = 1;
 pfnode list = NULL;
+
+fnode tabuleiro[TAMMATRIZ][TAMMATRIZ];
+fnode poss_list[SIZE];
+fnode poss_atual;
+int indexPoss_list=0;
 
 TS_StateTypeDef TS_State; //coordenadas do ts
 
@@ -193,6 +202,9 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim7);
 
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -217,11 +229,12 @@ int main(void)
 			if (japassouaqui1 == 0) {
 				japassouaqui1 = 1;
 				LCD_GameOn();
-				mostraJogador(jogador);
+				mostraJogador(2);
 				fl_gamestart = 0;
 				fl_gamestarted = 1;
 				comecarTimoeut=1;
 				timeout=20;
+				HAL_TIM_Base_Start_IT(&htim7);//para começar o timeout
 
 			}
 
@@ -836,8 +849,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void showTime(void){
 
-char c[SIZE];
-char d[SIZE];
+
 	sprintf(a,"Time:%02d:%02d",min,segundos);
 
 
@@ -845,22 +857,25 @@ if(segundos>60){
 	min++;
 	segundos=0;
 }
-
-	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4,(uint16_t)Font24.Height ,(uint8_t *)a, LEFT_MODE);
-
+	BSP_LCD_SetFont(&Font16);
+	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*3,(uint16_t)Font24.Height+10 ,(uint8_t *)a, LEFT_MODE);
+	BSP_LCD_SetFont(&Font24);
 
 	if(comecarTimoeut==1){
 		sprintf(d,"Timeout:%02d",timeout);
-		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4,(uint16_t)Font24.Height*2 ,(uint8_t *)d, LEFT_MODE);
-
+		BSP_LCD_SetFont(&Font16);
+		BSP_LCD_SetTextColor(LCD_COLOR_RED);
+		BSP_LCD_DisplayStringAt(QUADRADO * 11,QUADRADO * 5.25 ,(uint8_t *)d, LEFT_MODE);
+		BSP_LCD_SetFont(&Font24);
+		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 		if (timeout == 0) {
 			timeout = 20;
 			if (jogador == 1) {
 				timeoutCountPlayer1--;
-				jogador = 2;
+				//jogador = 2;
 			} else if (jogador == 2) {
 				timeoutCountPlayer2--;
-				jogador = 1;
+				//jogador = 1;
 			}
 
 		}
@@ -898,8 +913,11 @@ void temp(void) {
 
 		/* Display the Temperature Value on the LCD */
 		sprintf(desc, "Temp: %ld C", JTemp);
-		BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-170, 0, (uint8_t *) desc, LEFT_MODE);
-		BSP_LCD_ClearStringLine(BSP_LCD_GetXSize()-170);
+
+		BSP_LCD_SetFont(&Font16);
+		BSP_LCD_DisplayStringAt(BSP_LCD_GetXSize()-3*QUADRADO, TAMLCDY-QUADRADO, (uint8_t *) desc, LEFT_MODE);
+		BSP_LCD_SetFont(&Font24);
+
 	}
 	TEMPFLAG=0;
 }
@@ -907,15 +925,22 @@ void temp(void) {
 void LCD_GameOn(void){
 
 	int posicao=0;
+	int x=0;
+	int y=0;
 
 	BSP_LCD_Clear(LCD_COLOR_BLUE);
 
 	  for(int i=0;i<TAMMATRIZ ;i++){
-		int y=QUADRADO+i*QUADRADO;//
+		y=QUADRADO+i*QUADRADO;//
 		for(int j=0;j<TAMMATRIZ ;j++){
-			int x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
+			x=(BSP_LCD_GetXSize()/10)+j*QUADRADO;
 			posicao++;
-			list=addJogada(false,posicao,x,y,list);
+			tabuleiro[i][j].posicao=posicao;
+			tabuleiro[i][j].posicaoX=x;
+			tabuleiro[i][j].posicaoY=y;
+			tabuleiro[i][j].jogador=0;
+			tabuleiro[i][j].ja_jogada=false;
+			tabuleiro[i][j].valida=false;
 
 			BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);	//colorChange
 			BSP_LCD_FillRect(x, y, QUADRADO, QUADRADO);
@@ -924,13 +949,13 @@ void LCD_GameOn(void){
 			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
 			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
-/*			char a[SIZE];
+/*		char a[SIZE];
 			sprintf(a,"%d",posicao);
 			BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);*/
 		}
 	  }
 
-	  insereAs4inic(list,jogador);
+	  insereAs4inic(tabuleiro,jogador);
 }
 
 void LCD_Config(void)
@@ -980,37 +1005,42 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 
 void meteOndeTocaste(void){
 
-	pfnode auxlist=list;
-	pfnode tocouAqui=NULL;
 
 
 	tocouX = TS_State.touchX[0];
 	tocouY = TS_State.touchY[0];
 
+
+	if(japassouaqui2==0){
+		possible_move();
+		japassouaqui2=1;
+	}
+
 	if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO && tocouY > LIMITE_SUPERIOR && tocouY < LIMITE_INFERIOR && tocouX!=tocouXAnterior){
 
-		tocouXAnterior=tocouX;
-		mostraJogador(jogador);
-		HAL_Delay(200);
+		if(jogouValida(tocouX,tocouY,poss_list,indexPoss_list)==1){
+			poss_atual=getPosicao(tabuleiro,tocouX, tocouY);
+			poss_array_erasor();
+			inserePecaNaMatriz();
+			HAL_Delay(200);
+			tocouXAnterior=tocouX;
+			mostraJogador(jogador);
+			place();
+			japassouaqui2=0;
+
+			if(jogador==1)
+				jogador=2;
+			else if(jogador==2)
+				jogador=1;
 
 /*		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
 		BSP_LCD_DrawCircle(tocouX, tocouY, 20);
 		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);*/
 
-	tocouAqui=getPosicao(auxlist,tocouX,tocouY);
 
-	bool sera=seraValida(auxlist,tocouAqui,jogador);
-	if(sera==true){
-		if(jogador==1)
-			jogador=2;
-		else if(jogador==2)
-			jogador=1;
-		tocouAqui->ja_jogada=true;
-		inserePeca(tocouAqui->posicaoX,tocouAqui->posicaoY,jogador);
-	}else
-		return;
 
-	checkIfGameEnded(list, a);
+			checkIfGameEnded();
+		}
 	}
 	else
 		return;
@@ -1050,8 +1080,8 @@ void menuInicial(void){
 			&& tocouY > QUADRADO * 4 && tocouY < QUADRADO * 5
 			&& flagToca == 0) {
 		menuFlag=3;
-	}else if (tocouX > QUADRADO && tocouX < QUADRADO * 4 && tocouY > QUADRADO - 15
-				&& tocouY < QUADRADO - 15 + QUADRADO && flagToca == 0)	//verifica se carregou no 2 players
+	}else if (tocouX > QUADRADO && tocouX < QUADRADO * 4 && tocouY > QUADRADO*3 - 15
+				&& tocouY < QUADRADO*3 - 15 + QUADRADO && flagToca == 0)	//verifica se carregou no 2 players
 		{
 
 			menuFlag=2;
@@ -1103,21 +1133,24 @@ void menuInicial(void){
 		BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
 
 
-		BSP_LCD_DrawRect(QUADRADO+1, QUADRADO-15, QUADRADO*4, QUADRADO);
-		BSP_LCD_DrawRect(QUADRADO+2, QUADRADO-15, QUADRADO*4, QUADRADO);
-		BSP_LCD_DrawRect(QUADRADO-1, QUADRADO-15, QUADRADO*4, QUADRADO);
-		BSP_LCD_DrawRect(QUADRADO-2, QUADRADO-15, QUADRADO*4, QUADRADO);
-		BSP_LCD_DrawRect(QUADRADO, QUADRADO-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO+1, QUADRADO*3-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO+2, QUADRADO*3-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO-1, QUADRADO*3-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO-2, QUADRADO*3-15, QUADRADO*4, QUADRADO);
+		BSP_LCD_DrawRect(QUADRADO, QUADRADO*3-15, QUADRADO*4, QUADRADO);
 
-		BSP_LCD_DisplayStringAt(QUADRADO+15,QUADRADO, (uint8_t *) playerVSplayer, LEFT_MODE);
+		BSP_LCD_DisplayStringAt(QUADRADO+15,QUADRADO*3, (uint8_t *) playerVSplayer, LEFT_MODE);
 
-		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+1, QUADRADO-15, QUADRADO*3, QUADRADO);
-		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+2, QUADRADO-15, QUADRADO*3, QUADRADO);
-		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-1, QUADRADO-15, QUADRADO*3, QUADRADO);
-		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-2, QUADRADO-15, QUADRADO*3, QUADRADO);
-		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4, QUADRADO-15, QUADRADO*3, QUADRADO);
 
-		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4+15,QUADRADO, (uint8_t *) playerVSai, LEFT_MODE);
+		BSP_LCD_DrawBitmap(TAMLCDX/2-50,TAMLCDY/2-50,(uint8_t *)stlogo);
+
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+1, QUADRADO*3-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4+2, QUADRADO*3-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-1, QUADRADO*3-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4-2, QUADRADO*3-15, QUADRADO*3, QUADRADO);
+		BSP_LCD_DrawRect(TAMLCDX-QUADRADO*4, QUADRADO*3-15, QUADRADO*3, QUADRADO);
+
+		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4+15,QUADRADO*3, (uint8_t *) playerVSai, LEFT_MODE);
 
 		flagLcd=1;
 		menuFlag=2;
@@ -1155,6 +1188,447 @@ void fazerReset(void){
 
 	NVIC_SystemReset();
 }
+
+
+
+
+
+
+
+ void possible_move(void){
+
+
+
+    int e;
+    if(jogador==1)
+    	e=2;
+    else if(jogador==2)
+    	e=1;
+
+    indexPoss_list=0;
+    for(int i=1;i<9;i++){
+        for(int j=1;j<9;j++){
+            if((tabuleiro[i][j].ja_jogada==false)&&(tabuleiro[i-1][j-1].jogador==e || tabuleiro[i-1][j].jogador==e || tabuleiro[i-1][j+1].jogador==e ||tabuleiro[i][j-1].jogador==e ||
+            		tabuleiro[i][j+1].jogador== e || tabuleiro[i+1][j-1].jogador==e || tabuleiro[i+1][j].jogador==e || tabuleiro[i+1][j+1].jogador==e)){
+
+
+				poss_capt_h(e,jogador,i,j);
+                poss_capt_v(e,jogador,i,j);
+                poss_capt_dp(e,jogador,i,j);
+                poss_capt_ds(e,jogador,i,j);
+            }
+        }
+    }
+    poss_array_printer();
+}
+
+ void poss_capt_h(int e,int p,int i,int j){
+
+
+     int m,val,poss= i*10+j;
+
+     for(m=j+2; m<9; m++){
+         if(tabuleiro[i][j+1].jogador==e && tabuleiro[i][m].jogador==p){
+             val=check_reps(poss);
+             if(val==0){
+                poss_list[indexPoss_list]=tabuleiro[i][j];
+                indexPoss_list++;
+                break;
+             }
+         } else if(tabuleiro[i][m].ja_jogada==false){
+                break;
+         }
+     }
+
+    for(m=j-2; m>0; m--){
+         if(tabuleiro[i][j-1].jogador==e && tabuleiro[i][m].jogador==p){
+             val=check_reps(poss);
+             if(val==0){
+                poss_list[indexPoss_list]=tabuleiro[i][j];
+                indexPoss_list++;
+                break;
+             }
+         } else if(tabuleiro[i][m].ja_jogada==false){
+                break;
+         }
+     }
+
+
+ }
+
+
+ void poss_capt_v(int e,int p,int i,int j){
+
+	    int m,val,poss= i*10+j;
+
+	     for(m=i+2; m<9; m++){
+	         if(tabuleiro[i+1][j].jogador==e && tabuleiro[m][j].jogador==p){
+	             val=check_reps(poss);
+	             if(val==0){
+	                poss_list[indexPoss_list]=tabuleiro[i][j];
+	                indexPoss_list++;
+	                break;
+	             }
+	         } else if(tabuleiro[m][j].ja_jogada==false){
+	                break;
+	         }
+	     }
+
+	    for(m=i-2; m>0; m--){
+	         if(tabuleiro[i-1][j].jogador==e && tabuleiro[m][j].jogador==p){
+	             val=check_reps(poss);
+	             if(val==0){
+	                poss_list[indexPoss_list]=tabuleiro[i][j];
+	                indexPoss_list++;
+	                break;
+	             }
+	         } else if(tabuleiro[m][j].ja_jogada==false){
+	                break;
+	         }
+	     }
+ }
+
+ void poss_capt_dp(int e,int p,int i,int j){
+
+
+
+     int m,n,val,poss= i*10+j;
+
+     for(m=i+2, n=j+2 ; m<9 || n<9; m++, n++){
+         if(tabuleiro[i+1][j+1].jogador==e  && tabuleiro[m][n].jogador==p){
+             val=check_reps(poss);
+             if(val==0){
+                poss_list[indexPoss_list]=tabuleiro[i][j];
+                indexPoss_list++;
+                break;
+             }
+         } else if(tabuleiro[m][n].ja_jogada==false){
+             break;
+             }
+     }
+
+     for(m=i-2, n=j-2 ; m<0 || n<0; m--, n--){  //0 par test
+         if(tabuleiro[i-1][j-1].jogador==e  && tabuleiro[m][n].jogador==p){
+             val=check_reps(poss);
+             if(val==0){
+                poss_list[indexPoss_list]=tabuleiro[i][j];
+                indexPoss_list++;
+                break;
+             }
+         } else if(tabuleiro[m][n].ja_jogada==false){
+             break;
+             }
+     }
+ }
+
+ void poss_capt_ds(int e,int p,int i,int j){
+
+	    int m,n,val,poss= i*10+j;
+
+	     for(m=i+2, n=j-2 ; m<9 || n>0; m++, n--){
+	         if(tabuleiro[i+1][j-1].jogador==e  && tabuleiro[m][n].jogador==p){
+	             val=check_reps(poss);
+	             if(val==0){
+	                poss_list[indexPoss_list]=tabuleiro[i+1][j-1];
+	                indexPoss_list++;
+	                break;
+	             }
+	         } else if(tabuleiro[i][m].ja_jogada==false){
+	             break;
+	             }
+	     }
+
+	     for(m=i-2, n=j+2 ; m>0 || n<9; m--, n++){
+	         if(tabuleiro[i-1][j+1].jogador==e  && tabuleiro[m][n].jogador==p){
+	             val=check_reps(poss);
+	             if(val==0){
+	                poss_list[indexPoss_list]=tabuleiro[i-1][j+1];
+	                indexPoss_list++;
+	                break;
+	             }
+	         } else if(tabuleiro[i][m].ja_jogada==false){
+	             break;
+	             }
+	     }
+ }
+
+
+ void poss_array_printer(void){
+
+	 for(int i=0;i<indexPoss_list;i++){
+		 inserePosicaoPossivel(poss_list[i].posicaoX,poss_list[i].posicaoY,poss_list[i].jogador);
+	 }
+
+ }
+
+ void poss_array_erasor(void){
+
+ 	 for(int i=0;i<indexPoss_list;i++){
+ 		limpaPosicaoPossivel(poss_list[i].posicaoX,poss_list[i].posicaoY);
+ 	 }
+  }
+
+
+ int check_reps(int jog){
+
+
+     for(int i=0;i<TAMMATRIZ;i++){
+         if(poss_list[i].posicao== jog){
+             return 1;
+         }
+     }
+
+     return 0;
+ }
+
+
+
+
+ void inserePecaNaMatriz(void){
+	for(int i=1;i<9;i++){
+		for(int j=1;j<9;j++){
+			if(poss_atual.posicao==tabuleiro[i][j].posicao){
+				tabuleiro[i][j].jogador=jogador;
+				tabuleiro[i][j].ja_jogada=true;
+				inserePeca(tabuleiro[i][j].posicaoX,tabuleiro[i][j].posicaoY,jogador);
+			}
+		}
+	}
+ }
+
+
+
+ void place(void){
+
+
+	    int e;
+	    if(jogador==1)
+	    	e=2;
+	    else if(jogador==2)
+	    	e=1;
+
+	 for(int i=1;i<9;i++){
+	         for(int j=1;j<9;j++){
+     piece_changer_h(e,jogador,i,j);
+     piece_changer_v(e,jogador,i,j);
+     piece_changer_dp(e,jogador,i,j);
+     piece_changer_ds(e,jogador,i,j);
+	         }
+	 }
+ }
+
+
+
+ void piece_changer_h(int e,int p,int i, int j){
+
+     int m,limiter,marker=0;
+
+     for(m=j+2; m<9; m++){
+         if(tabuleiro[i][j+1].jogador==e && tabuleiro[i][m].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[i][m].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+         for(m=j+1;m<limiter;m++){//poss erro
+        	 inserePeca(tabuleiro[i][m].posicaoX,tabuleiro[i][m].posicaoY,e);
+        	 tabuleiro[i][m].jogador=e;
+
+         }
+     }
+
+     marker=0;
+    for(m=j-2; m>0; m--){
+         if(tabuleiro[i][j-1].jogador==e && tabuleiro[i][m].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[i][m].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+         for(m=j-1;m>limiter;m--){
+        	 inserePeca(tabuleiro[i][m].posicaoX,tabuleiro[i][m].posicaoY,e);
+        	 tabuleiro[i][m].jogador=e;
+         }
+     }
+
+ }
+
+
+ void piece_changer_v(int e,int p,int i, int j){
+
+     int m,limiter,marker=0;
+
+     for(m=j+2; m<9; m++){
+         if(tabuleiro[i+1][j].jogador==e && tabuleiro[m][j].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[i][m].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+         for(m=j+1;m<limiter;m++){
+        	 inserePeca(tabuleiro[m][j].posicaoX,tabuleiro[m][j].posicaoY,e);
+        	 tabuleiro[i][m].jogador=e;
+
+         }
+     }
+
+     marker=0;
+    for(m=j-2; m>0; m--){
+         if(tabuleiro[i-1][j].jogador==e && tabuleiro[m][j].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[m][j].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+         for(m=j-1;m>limiter;m--){
+        	 inserePeca(tabuleiro[m][j].posicaoX,tabuleiro[m][j].posicaoY,e);
+        	 tabuleiro[m][j].jogador=e;
+         }
+     }
+
+ }
+
+ void piece_changer_dp(int e,int p,int i, int j){
+
+     int m,n,limiter,marker=0;
+
+     for(m=i+2, n=j+2 ; m<9 || n<9; m++, n++){
+         if(tabuleiro[i+1][j+1].jogador==e && tabuleiro[m][n].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[m][n].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+    	 for(m=i+2, n=j+2 ; m<limiter+2 || n<limiter+2; m++, n++){
+        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
+        	 tabuleiro[m][n].jogador=e;
+
+         }
+     }
+
+     marker=0;
+     for(m=i-2, n=j-2 ; m<0 || n<0; m--, n--){//0 par test
+         if(tabuleiro[i+1][j+1].jogador==e && tabuleiro[m][n].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[m][n].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+    	 for(m=i-2, n=j-2 ; m<limiter || n<limiter; m++, n++){
+        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
+        	 tabuleiro[m][n].jogador=e;
+
+         }
+     }
+
+ }
+
+
+ void piece_changer_ds(int e,int p,int i, int j){
+
+     int m,n,limiter,marker=0;
+
+     for(m=i+2, n=j+2 ; m<9 || n<9; m++, n++){
+         if(tabuleiro[i+1][j-1].jogador==e && tabuleiro[m][n].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[m][n].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+    	 for(m=i+2, n=j-2 ; m<limiter+2 || n<limiter-2; m++, n--){
+        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
+        	 tabuleiro[m][n].jogador=e;
+
+         }
+     }
+
+     marker=0;
+     for(m=i-2, n=j-2 ; m<0 || n<0; m--, n--){//0 par test
+         if(tabuleiro[i-1][j+1].jogador==e && tabuleiro[m][n].jogador==p){
+             limiter=m;
+             marker++;
+             break;
+         } else if(tabuleiro[m][n].ja_jogada==false){
+                break;
+         }
+     }
+
+     if(marker>0){
+    	 for(m=i-2, n=j+2 ; m<limiter+2 || n<limiter-2; m++, n++){
+        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
+        	 tabuleiro[m][n].jogador=e;
+
+         }
+     }
+
+ }
+
+
+ void checkIfGameEnded(void){
+
+ 	int count=0;
+ 	int countplayer1=0;
+ 	int countplayer2=0;
+
+ 	for (int i = 1; i < 9; i++) {
+ 		for (int j = 1; j < 9; j++) {
+
+ 			if (tabuleiro[i][j].ja_jogada == true)
+ 				count++;
+ 			if (tabuleiro[i][j].jogador == 1)
+ 				countplayer1++;
+ 			if (tabuleiro[i][j+1].jogador == 2)
+ 				countplayer2++;
+ 		}
+ 	}
+ 		count=60;
+ 		countplayer1=10;
+ 		countplayer2=11;
+ 		if(count>=60){
+
+ 			if(countplayer2>countplayer1){
+ 				sendToSd(2,countplayer2,a);
+ 			}else if(countplayer2<countplayer1){
+ 				sendToSd(1,countplayer1,a);
+ 			}else
+ 				sendToSd(0,countplayer1,a);
+ 			fazerReset();
+
+ 		}
+
+
+ 	}
+
+
+
 /* USER CODE END 4 */
 
 /**

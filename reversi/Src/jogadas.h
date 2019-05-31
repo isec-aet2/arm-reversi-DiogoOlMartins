@@ -46,30 +46,39 @@ struct jogadas{
 	 bool valida;
 	 bool ja_jogada;
 
-	pfnode next;
-
 };
 
 
 
-pfnode addJogada(bool validat,int possicao,int possicaot,int possicaoy,pfnode lista);
-
-void insereAs4inic(pfnode list,int jogador);
+void insereAs4inic(fnode list[TAMMATRIZ][TAMMATRIZ],int player);
 void inserePeca(int a,int b,int jogador);
 
-pfnode getPosicao(pfnode list,int x, int y);
-bool seraValida(pfnode list,pfnode posicao,int player);
+fnode getPosicao(fnode list[TAMMATRIZ][TAMMATRIZ],int x, int y);
 
-int verSeValidaHorizontal(pfnode auxlist,pfnode posicao, int enemy);
-int verSeValidaVertical(pfnode auxlist,pfnode posicao, int enemy);
-int verSeValidaDiagonalSubir(pfnode auxlist,pfnode posicao, int enemy);
-int verSeValidaDiagonalDesc(pfnode auxlist,pfnode posicao, int enemy);
 void mostraJogador(int jogador);
-void checkIfGameEnded(pfnode list, char b[SIZE]);
+void checkIfGameEnded(void);
 void fazerReset();
 void sendToSd(int jog, int a ,char b[SIZE]);
 void menuInicial(void);
 
+void possible_move(void);
+void poss_capt_h(int e,int p,int i,int j);
+void poss_capt_v(int e,int p,int i,int j);
+void poss_capt_dp(int e,int p,int i,int j);
+void poss_capt_ds(int e,int p,int i,int j);
+int check_reps(int jog);
+void inserePosicaoPossivel(int x,int y,int jogador);
+void poss_array_printer(void);
+void poss_array_erasor(void);
+void limpaPosicaoPossivel(int x,int y);
+int jogouValida(int x, int y, fnode poss_listA[SIZE], int indice);
+
+void inserePecaNaMatriz(void);
+void piece_changer_h(int e,int p,int i, int j);
+void piece_changer_v(int e,int p,int i, int j);
+void piece_changer_dp(int e,int p,int i, int j);
+void piece_changer_ds(int e,int p,int i, int j);
+void place(void);
 
 #endif /* JOGADAS_H_ */
 
