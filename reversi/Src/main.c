@@ -77,30 +77,29 @@ SDRAM_HandleTypeDef hsdram1;
 /* USER CODE BEGIN PV */
 volatile uint32_t ConvertedValue = 0;
 volatile unsigned int segundos = 0;
-volatile unsigned int timeFlag = 0;
 volatile unsigned int TEMPFLAG = 0;
 volatile unsigned int timeout = 20;
 int timeoutCountPlayer1 = 3;
 int timeoutCountPlayer2 = 3;
-volatile unsigned int flagLcd = 0;
 volatile unsigned int flagToca = 1;
 volatile unsigned int fl_gamestart = 0;
-volatile unsigned int fl_gamestarted = 0;
 volatile unsigned int japassouaqui = 0;
 volatile unsigned int japassouaqui1 = 0; //fl_gamestart
 volatile unsigned int japassouaqui2 = 0; //ja passou no mostrar as possiveis
 int jogador = 1;
+int aiFlag=0;
 int tocouX = 0;
 int tocouXAnterior = 0;
 int tocouY = 0;
-unsigned int min = 0;
-unsigned int reset = 0;
-char a[SIZE];
+unsigned int minutos = 0;//minutos
+unsigned int reset = 0;//flag de reset
+char tempoAMostrar[SIZE];
 char c[SIZE];
 char d[SIZE];
 int comecarTimoeut = 0;
 unsigned int menuFlag = 1;
 pfnode list = NULL;
+
 
 fnode tabuleiro[TAMMATRIZ][TAMMATRIZ];
 fnode poss_list[SIZE];
@@ -132,7 +131,7 @@ void LCD_Config(void);
 void showTime(void);
 void touch_screen_config(void);
 void temp(void);
-void meteOndeTocaste(void);
+void jogo(void);
 void LCD_GameOn(void);
 void fazerReset(void);
 
@@ -212,45 +211,43 @@ int main(void)
   while (1)
   {
 
+	  //se tocou no ecrã delay
 		if (flagToca == 1) {
 			HAL_Delay(200);
 			flagToca = 0;
 		}
-
+		//mostra o primeiro e o segundo ecrâ, faz tambem a cells selection recognition
 		menuInicial();
 
-		if (TEMPFLAG >= 2)
+		if (TEMPFLAG >= 2){//para mostrar de dois em dois segundos
 			temp();
-		if (timeFlag == 1)
-			showTime();
+		}
+			showTime();//mostra o tempo
 
-		if (fl_gamestart == 1) {
+		if (fl_gamestart == 1) {//depois de passar nos menus começa o jogo
 
-			if (japassouaqui1 == 0) {
+			if (japassouaqui1 == 0) {//só passa aqui uma vez
 				japassouaqui1 = 1;
-				LCD_GameOn();
-				mostraJogador(2);
-				fl_gamestart = 0;
-				fl_gamestarted = 1;
+				LCD_GameOn();//cria a matriz e mostra no ecrâ
+				mostraJogador(2);//mostra quem está a jogar
+				fl_gamestart = 0;//reset a flag
 				comecarTimoeut=1;
-				timeout=20;
 				HAL_TIM_Base_Start_IT(&htim7);//para começar o timeout
-
 			}
 
-			meteOndeTocaste();
+
+			if(aiFlag==1 && jogador==2){// se for para jogar contra o computador
+				meteJogAI();
+			}else
+				jogo();//não deve ser preciso comentar
 
 		}
 
-		if (reset == 1) {
+		if (reset == 1) {//flag de reset
 			HAL_Delay(200);
 			fazerReset();
 
 		}
-
-
-
-
 
 	}
     /* USER CODE END WHILE */
@@ -850,15 +847,15 @@ static void MX_GPIO_Init(void)
 void showTime(void){
 
 
-	sprintf(a,"Time:%02d:%02d",min,segundos);
+	sprintf(tempoAMostrar,"Time:%02d:%02d",minutos,segundos);
 
 
-if(segundos>60){
-	min++;
+if(segundos>59){
+	minutos++;
 	segundos=0;
 }
 	BSP_LCD_SetFont(&Font16);
-	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*3,(uint16_t)Font24.Height+10 ,(uint8_t *)a, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*3,(uint16_t)Font24.Height+10 ,(uint8_t *)tempoAMostrar, LEFT_MODE);
 	BSP_LCD_SetFont(&Font24);
 
 	if(comecarTimoeut==1){
@@ -880,20 +877,20 @@ if(segundos>60){
 
 		}
 
-		if (jogador == 1) {
-			sprintf(c,"Timeout's: %d",timeoutCountPlayer1);
+
+			sprintf(c,"Timeout's P1:%d",timeoutCountPlayer1);
 			BSP_LCD_DisplayStringAt(QUADRADO * 11, QUADRADO * 4.75,(uint8_t *) c, LEFT_MODE);
-		} else if (jogador == 2) {
-			sprintf(c,"Timeout's: %d",timeoutCountPlayer1);
-			BSP_LCD_DisplayStringAt(QUADRADO * 11, QUADRADO * 4.75,(uint8_t *) c, LEFT_MODE);
-		}
+
+			sprintf(c,"Timeout's P2:%d",timeoutCountPlayer2);
+			BSP_LCD_DisplayStringAt(QUADRADO * 11, QUADRADO * 5.75,(uint8_t *) c, LEFT_MODE);
+
 
 		if(timeoutCountPlayer1<=0){
-			sendToSd(4,0,a);
+			sendToSd(4,0,tempoAMostrar);
 			fazerReset();
 		}else
 		if(timeoutCountPlayer2<=0){
-			sendToSd(5,0,a);
+			sendToSd(5,0,tempoAMostrar);
 			fazerReset();
 		}
 	}
@@ -949,9 +946,6 @@ void LCD_GameOn(void){
 			BSP_LCD_DrawRect(x, y, QUADRADO-1, QUADRADO-1);//fazer as linhas mais gordas
 			BSP_LCD_DrawRect(x-1, y-1, QUADRADO, QUADRADO+1);//fazer as linhas mais gordas
 
-/*		char a[SIZE];
-			sprintf(a,"%d",posicao);
-			BSP_LCD_DisplayStringAt(x+QUADRADO/3, y+QUADRADO/3, (uint8_t *)a, LEFT_MODE);*/
 		}
 	  }
 
@@ -990,7 +984,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 	if (htim->Instance == TIM6){
 		TEMPFLAG++;
 		segundos++;
-		timeFlag=1;
 	}
 
 	if (htim->Instance == TIM7){
@@ -999,52 +992,77 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { //comum para todos
 
 }
 
+void redoMatriz(void){
+
+
+	 for(int i=1;i<9;i++){
+	         for(int j=1;j<9;j++){
+	        	 inserePeca(tabuleiro[i][j].posicaoX,tabuleiro[i][j].posicaoY,tabuleiro[i][j].jogador);
+	         }
+		 }
+}
+
+
+void jogo(void){
 
 
 
-
-void meteOndeTocaste(void){
-
-
-
-	tocouX = TS_State.touchX[0];
+	tocouX = TS_State.touchX[0];//guarda os pontos de contacto
 	tocouY = TS_State.touchY[0];
 
 
 	if(japassouaqui2==0){
-		possible_move();
+		possible_move();//mostra as jogadas possiveis no ecrâ
 		japassouaqui2=1;
 	}
-
+//se tocar dentro da matriz joga caso contrario not
 	if (tocouX > LIMITE_ESQUERDO && tocouX < LIMITE_DIREITO && tocouY > LIMITE_SUPERIOR && tocouY < LIMITE_INFERIOR && tocouX!=tocouXAnterior){
 
-		if(jogouValida(tocouX,tocouY,poss_list,indexPoss_list)==1){
-			poss_atual=getPosicao(tabuleiro,tocouX, tocouY);
-			poss_array_erasor();
-			inserePecaNaMatriz();
-			HAL_Delay(200);
-			tocouXAnterior=tocouX;
-			mostraJogador(jogador);
-			place();
-			japassouaqui2=0;
+		if(jogouValida(tocouX,tocouY,poss_list,indexPoss_list)==1){//só pode jogar nas validas
+			poss_atual=getPosicao(tabuleiro,tocouX, tocouY);// guarda o lugar na matriz da jogada
+			poss_array_erasor();//apaga as jogadas possiveis
+			inserePecaNaMatriz();//insere a peça na matris mas não a imprime no ecrã
+			tocouXAnterior=tocouX;//guarda a jogada anterior para
+			mostraJogador(jogador);//mostra a "bola" do jogador
+			place();//troca as peças consuante a jogada
+			redoMatriz();//percorre o array e insere as bolas corretas no sitio correto
 
+
+			japassouaqui2=0;
+			//troca o jogador
 			if(jogador==1)
 				jogador=2;
 			else if(jogador==2)
 				jogador=1;
-
-/*		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-		BSP_LCD_DrawCircle(tocouX, tocouY, 20);
-		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);*/
-
-
-
-			checkIfGameEnded();
+			checkIfGameEnded();//se o jogo acabou manda os dados para o sd e ativa a flag de reset
 		}
 	}
 	else
 		return;
 }
+
+
+void meteJogAI(void){
+
+	HAL_Delay(200);
+
+	possible_move();
+	int jogada=0;
+
+	jogada=randomizado(indexPoss_list);
+
+	poss_atual=getPosicao(tabuleiro,poss_list[jogada].posicaoX, poss_list[jogada].posicaoY);
+	poss_array_erasor();
+	inserePecaNaMatriz();
+	mostraJogador(jogador);
+	place();
+	redoMatriz();
+	jogador=1;
+
+}
+
+
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 
@@ -1056,7 +1074,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 	 if(flagToca == 0) {
 		flagToca = 1;
 		if (GPIO_Pin == GPIO_PIN_13) {
-
+			timeout=20;
 			BSP_TS_GetState(&TS_State);
 		}
 	}
@@ -1084,6 +1102,12 @@ void menuInicial(void){
 				&& tocouY < QUADRADO*3 - 15 + QUADRADO && flagToca == 0)	//verifica se carregou no 2 players
 		{
 
+			menuFlag=2;
+			fl_gamestart=1;
+
+		}else if(tocouX > TAMLCDX-QUADRADO*4 && tocouX < TAMLCDX-QUADRADO*4+QUADRADO*3 && tocouY > QUADRADO*3 - 15
+				&& tocouY < QUADRADO*3 - 15 + QUADRADO && flagToca == 0){
+			aiFlag=1;
 			menuFlag=2;
 			fl_gamestart=1;
 
@@ -1152,7 +1176,6 @@ void menuInicial(void){
 
 		BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*4+15,QUADRADO*3, (uint8_t *) playerVSai, LEFT_MODE);
 
-		flagLcd=1;
 		menuFlag=2;
 		break;
 		}
@@ -1161,32 +1184,30 @@ void menuInicial(void){
 }
 
 void fazerReset(void){
-	ConvertedValue = 0;
+/*	ConvertedValue = 0;
 	segundos = 0;
-	timeFlag = 0;
 	TEMPFLAG = 0;
 	timeout = 20;
 	timeoutCountPlayer1 = 3;
 	timeoutCountPlayer2 = 3;
-	flagLcd = 0;
+
 	flagToca = 0;
 	fl_gamestart = 0;
-	fl_gamestarted = 0;
 	japassouaqui = 0;
 	japassouaqui1 = 0;
 	jogador = 1;
 	//tocouX = 0;
 	tocouXAnterior = 0;
 	//tocouY = 0;
-	min = 0;
+	minutos = 0;
 	reset = 0;
 
 	comecarTimoeut = 0;
 	menuFlag = 1;
 	free(list);
-	list = NULL;
+	list = NULL;*/
 
-	NVIC_SystemReset();
+	NVIC_SystemReset();//mais engraçado assim
 }
 
 
@@ -1390,7 +1411,7 @@ void fazerReset(void){
 			if(poss_atual.posicao==tabuleiro[i][j].posicao){
 				tabuleiro[i][j].jogador=jogador;
 				tabuleiro[i][j].ja_jogada=true;
-				inserePeca(tabuleiro[i][j].posicaoX,tabuleiro[i][j].posicaoY,jogador);
+				//inserePeca(tabuleiro[i][j].posicaoX,tabuleiro[i][j].posicaoY,jogador);
 			}
 		}
 	}
@@ -1401,106 +1422,70 @@ void fazerReset(void){
  void place(void){
 
 
-	    int e;
+	    int enemy;
 	    if(jogador==1)
-	    	e=2;
+	    	enemy=2;
 	    else if(jogador==2)
-	    	e=1;
+	    	enemy=1;
 
 	 for(int i=1;i<9;i++){
 	         for(int j=1;j<9;j++){
-     piece_changer_h(e,jogador,i,j);
-     piece_changer_v(e,jogador,i,j);
-     piece_changer_dp(e,jogador,i,j);
-     piece_changer_ds(e,jogador,i,j);
+	        	 if(poss_atual.posicao==tabuleiro[i][j].posicao){
+						 piece_changer_h(enemy,jogador,i,j);
+						 piece_changer_v(enemy,jogador,i,j);
+						 piece_changer_dp(enemy,jogador,i,j);
+						 piece_changer_ds(enemy,jogador,i,j);
+	        	 }
 	         }
 	 }
  }
 
 
 
- void piece_changer_h(int e,int p,int i, int j){
 
-     int m,limiter,marker=0;
 
-     for(m=j+2; m<9; m++){
-         if(tabuleiro[i][j+1].jogador==e && tabuleiro[i][m].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[i][m].ja_jogada==false){
-                break;
-         }
-     }
 
-     if(marker>0){
-         for(m=j+1;m<limiter;m++){//poss erro
-        	 inserePeca(tabuleiro[i][m].posicaoX,tabuleiro[i][m].posicaoY,e);
-        	 tabuleiro[i][m].jogador=e;
+ void piece_changer_h(int e,int p,int linha, int coluna){
 
-         }
-     }
+  int i;
 
-     marker=0;
-    for(m=j-2; m>0; m--){
-         if(tabuleiro[i][j-1].jogador==e && tabuleiro[i][m].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[i][m].ja_jogada==false){
-                break;
-         }
-     }
+	 for(i=0;i<8;i++){
+		 if(tabuleiro[linha][i+1].jogador==e){
+			 if(tabuleiro[linha][i].jogador==0)
+				 return;
+		 	 tabuleiro[linha][i].jogador=p;
+		 }
+	 }
 
-     if(marker>0){
-         for(m=j-1;m>limiter;m--){
-        	 inserePeca(tabuleiro[i][m].posicaoX,tabuleiro[i][m].posicaoY,e);
-        	 tabuleiro[i][m].jogador=e;
-         }
-     }
+	 for(i=8;i>0;i--){
+		 if(tabuleiro[linha][i-1].jogador==e){
+			 if(tabuleiro[linha][i].jogador==0)
+				 return;
+		 	 tabuleiro[linha][i].jogador=p;
+		 }
+	 }
 
  }
 
 
- void piece_changer_v(int e,int p,int i, int j){
+ void piece_changer_v(int e,int p,int linha, int coluna){
 
-     int m,limiter,marker=0;
+	 int i;
+	 for(i=0;i<8;i++){
+	 		 if(tabuleiro[i+1][coluna].jogador==e){
+	 			if(tabuleiro[i][coluna].jogador==0)
+	 				return;
+	 		 	 tabuleiro[i][coluna].jogador=p;
+	 		 }
+	 	 }
 
-     for(m=j+2; m<9; m++){
-         if(tabuleiro[i+1][j].jogador==e && tabuleiro[m][j].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[i][m].ja_jogada==false){
-                break;
-         }
-     }
-
-     if(marker>0){
-         for(m=j+1;m<limiter;m++){
-        	 inserePeca(tabuleiro[m][j].posicaoX,tabuleiro[m][j].posicaoY,e);
-        	 tabuleiro[i][m].jogador=e;
-
-         }
-     }
-
-     marker=0;
-    for(m=j-2; m>0; m--){
-         if(tabuleiro[i-1][j].jogador==e && tabuleiro[m][j].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[m][j].ja_jogada==false){
-                break;
-         }
-     }
-
-     if(marker>0){
-         for(m=j-1;m>limiter;m--){
-        	 inserePeca(tabuleiro[m][j].posicaoX,tabuleiro[m][j].posicaoY,e);
-        	 tabuleiro[m][j].jogador=e;
-         }
-     }
+	 	 for(i=8;i>0;i--){
+	 		 if(tabuleiro[i-1][coluna].jogador==e){
+		 			if(tabuleiro[i][coluna].jogador==0)
+		 				return;
+	 			 tabuleiro[i][coluna].jogador=p;
+	 		 }
+	 	 }
 
  }
 
@@ -1550,44 +1535,7 @@ void fazerReset(void){
 
  void piece_changer_ds(int e,int p,int i, int j){
 
-     int m,n,limiter,marker=0;
 
-     for(m=i+2, n=j+2 ; m<9 || n<9; m++, n++){
-         if(tabuleiro[i+1][j-1].jogador==e && tabuleiro[m][n].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[m][n].ja_jogada==false){
-                break;
-         }
-     }
-
-     if(marker>0){
-    	 for(m=i+2, n=j-2 ; m<limiter+2 || n<limiter-2; m++, n--){
-        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
-        	 tabuleiro[m][n].jogador=e;
-
-         }
-     }
-
-     marker=0;
-     for(m=i-2, n=j-2 ; m<0 || n<0; m--, n--){//0 par test
-         if(tabuleiro[i-1][j+1].jogador==e && tabuleiro[m][n].jogador==p){
-             limiter=m;
-             marker++;
-             break;
-         } else if(tabuleiro[m][n].ja_jogada==false){
-                break;
-         }
-     }
-
-     if(marker>0){
-    	 for(m=i-2, n=j+2 ; m<limiter+2 || n<limiter-2; m++, n++){
-        	 inserePeca(tabuleiro[m][n].posicaoX,tabuleiro[m][n].posicaoY,e);
-        	 tabuleiro[m][n].jogador=e;
-
-         }
-     }
 
  }
 
@@ -1609,17 +1557,17 @@ void fazerReset(void){
  				countplayer2++;
  		}
  	}
- 		count=60;
- 		countplayer1=10;
- 		countplayer2=11;
+ 		//count=60;
+ 		//countplayer1=10;
+ 		//countplayer2=11;
  		if(count>=60){
 
  			if(countplayer2>countplayer1){
- 				sendToSd(2,countplayer2,a);
+ 				sendToSd(2,countplayer2,tempoAMostrar);
  			}else if(countplayer2<countplayer1){
- 				sendToSd(1,countplayer1,a);
+ 				sendToSd(1,countplayer1,tempoAMostrar);
  			}else
- 				sendToSd(0,countplayer1,a);
+ 				sendToSd(0,countplayer1,tempoAMostrar);
  			fazerReset();
 
  		}

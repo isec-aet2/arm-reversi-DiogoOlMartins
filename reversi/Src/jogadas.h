@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery.h"
 #include "stm32f769i_discovery_ts.h"
@@ -79,6 +80,10 @@ void piece_changer_v(int e,int p,int i, int j);
 void piece_changer_dp(int e,int p,int i, int j);
 void piece_changer_ds(int e,int p,int i, int j);
 void place(void);
+void redo(void);
+int randomizado(int i);
+void meteJogAI(void);
+void redoMatriz(void);
 
 #endif /* JOGADAS_H_ */
 

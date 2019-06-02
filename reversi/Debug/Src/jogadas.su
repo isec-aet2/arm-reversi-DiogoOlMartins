@@ -6,3 +6,4 @@ jogadas.c:83:6:limpaPosicaoPossivel	32	static
 jogadas.c:96:5:jogouValida	40	static
 jogadas.c:113:6:mostraJogador	136	static
 jogadas.c:156:6:sendToSd	144	static
+jogadas.c:200:5:randomizado	40	static

@@ -62,8 +62,8 @@ void inserePeca(int a,int b,int jogador){
 		BSP_LCD_DrawCircle(a,b, QUADRADO/2-TAMMATRIZ );
 		BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 		BSP_LCD_FillCircle(a,b, QUADRADO/2-9);
-	}
-
+	}else if(jogador==0)
+				return;
 }
 
 
@@ -197,6 +197,18 @@ void sendToSd(int jog, int a ,char b[SIZE]){
 }
 
 
+int randomizado(int i) {
+    int temp = 0;
+    time_t t;
+
+    /* Intializes random number generator */
+    srand((unsigned) time(&t));
+    /* Print n random numbers from 0 to 7 */
+    temp = rand() % i;
+
+
+    return temp;
+}
 
 
 
