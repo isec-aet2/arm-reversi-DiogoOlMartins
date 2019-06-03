@@ -99,8 +99,9 @@ char d[SIZE];
 int comecarTimoeut = 0;
 unsigned int menuFlag = 1;
 pfnode list = NULL;
-
-
+volatile unsigned int resetTimerFlag=0;
+unsigned int player1Pieces=0;
+unsigned int player2Pieces=0;
 fnode tabuleiro[TAMMATRIZ][TAMMATRIZ];
 fnode poss_list[SIZE];
 fnode poss_atual;
@@ -233,6 +234,10 @@ int main(void)
 				fl_gamestart = 0;//reset a flag
 				comecarTimoeut=1;
 				HAL_TIM_Base_Start_IT(&htim7);//para começar o timeout
+
+				countMatriz();//conta as peças do jogador
+				showPlayerPieces();//mostra no lcd as peças do jogador e quem ganha
+
 			}
 
 
@@ -242,7 +247,6 @@ int main(void)
 				jogo();//não deve ser preciso comentar
 
 		}
-
 		if (reset == 1) {//flag de reset
 			HAL_Delay(200);
 			fazerReset();
@@ -858,6 +862,15 @@ if(segundos>59){
 	BSP_LCD_DisplayStringAt(TAMLCDX-QUADRADO*3,(uint16_t)Font24.Height+10 ,(uint8_t *)tempoAMostrar, LEFT_MODE);
 	BSP_LCD_SetFont(&Font24);
 
+
+	if(tocouX>TAMLCDX-QUADRADO*3 && tocouX<TAMLCDX-QUADRADO && tocouY>(uint16_t)Font24.Height+10 && tocouY<(uint16_t)Font24.Height+30 && resetTimerFlag==0){
+		minutos=0;
+		segundos=0;
+		timeout=20;
+		resetTimerFlag=1;
+
+	}
+
 	if(comecarTimoeut==1){
 		sprintf(d,"Timeout:%02d",timeout);
 		BSP_LCD_SetFont(&Font16);
@@ -1003,6 +1016,50 @@ void redoMatriz(void){
 }
 
 
+void countMatriz(void){
+	player1Pieces=0;
+	player2Pieces=0;
+
+	 for(int i=1;i<9;i++){
+	         for(int j=1;j<9;j++){
+	        	 if(tabuleiro[i][j].jogador==1)
+	        		 player1Pieces++;
+	        	 if(tabuleiro[i][j].jogador==2)
+	        		 player2Pieces++;
+	         }
+		 }
+}
+
+
+void showPlayerPieces(void){
+
+	char play1[SIZE];
+	char play2[SIZE];
+	char win[SIZE];
+	BSP_LCD_SetFont(&Font16);
+	sprintf(play1,"P1:%d pontos",player1Pieces);
+	sprintf(play2,"P2:%d pontos",player2Pieces);
+	if(player2Pieces<player1Pieces){
+		sprintf(win,"P1 WIN");
+		BSP_LCD_DisplayStringAt(QUADRADO*13,TAMLCDY-QUADRADO*3, (uint8_t *)win , LEFT_MODE);
+	}
+	if(player2Pieces>player1Pieces){
+		sprintf(win,"P2 WIN");
+		BSP_LCD_DisplayStringAt(QUADRADO*13,TAMLCDY-QUADRADO*3, (uint8_t *)win , LEFT_MODE);
+	}
+
+	if(player2Pieces==player1Pieces){
+		sprintf(win,"draw  ");
+		BSP_LCD_DisplayStringAt(QUADRADO*13,TAMLCDY-QUADRADO*3, (uint8_t *)win, LEFT_MODE);
+	}
+
+
+	BSP_LCD_DisplayStringAt(QUADRADO*13,TAMLCDY-QUADRADO*4+15, (uint8_t *)play1, LEFT_MODE);
+	BSP_LCD_DisplayStringAt(QUADRADO*13,TAMLCDY-QUADRADO*3-15, (uint8_t *)play2, LEFT_MODE);
+
+	BSP_LCD_SetFont(&Font24);
+}
+
 void jogo(void){
 
 
@@ -1028,6 +1085,10 @@ void jogo(void){
 			redoMatriz();//percorre o array e insere as bolas corretas no sitio correto
 
 
+			countMatriz();//conta as peças do jogador
+			showPlayerPieces();//mostra no lcd as peças do jogador e quem ganha
+
+
 			japassouaqui2=0;
 			//troca o jogador
 			if(jogador==1)
@@ -1045,6 +1106,11 @@ void jogo(void){
 void meteJogAI(void){
 
 	HAL_Delay(200);
+
+
+	countMatriz();//conta as peças do jogador
+	showPlayerPieces();//mostra no lcd as peças do jogador e quem ganha
+
 
 	possible_move();
 	int jogada=0;
@@ -1076,6 +1142,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupção
 		if (GPIO_Pin == GPIO_PIN_13) {
 			timeout=20;
 			BSP_TS_GetState(&TS_State);
+			if(resetTimerFlag==1){
+				resetTimerFlag=0;
+			}
 		}
 	}
 

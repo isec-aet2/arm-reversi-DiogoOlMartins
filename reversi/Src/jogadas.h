@@ -84,6 +84,8 @@ void redo(void);
 int randomizado(int i);
 void meteJogAI(void);
 void redoMatriz(void);
+void countMatriz(void);
+void showPlayerPieces(void);
 
 #endif /* JOGADAS_H_ */
 
