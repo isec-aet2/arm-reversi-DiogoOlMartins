@@ -180,18 +180,18 @@ void sendToSd(int jog, int a ,char b[SIZE]){
 
 
 	if (f_mount(&SDFatFS, SDPath, 0) != FR_OK){
-			Error_Handler();
-		}
+		Error_Handler();
+	}
 
-		if (f_open(&SDFile, "reversi.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
-			Error_Handler();
-		}
-		int x=strlen(strings)*sizeof(char);
-		if(f_write(&SDFile, strings, x, &n) != FR_OK){
-			Error_Handler();
-		}
+	if (f_open(&SDFile, "reversi.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
+		Error_Handler();
+	}
+	int x=strlen(strings)*sizeof(char);
+	if(f_write(&SDFile, strings, x, &n) != FR_OK){
+		Error_Handler();
+	}
 
-		f_close(&SDFile);
+	f_close(&SDFile);
 
 
 }

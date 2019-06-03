@@ -86,6 +86,7 @@ void meteJogAI(void);
 void redoMatriz(void);
 void countMatriz(void);
 void showPlayerPieces(void);
+void sendLog(void);
 
 #endif /* JOGADAS_H_ */
 

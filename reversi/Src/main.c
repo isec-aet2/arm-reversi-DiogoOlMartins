@@ -243,8 +243,11 @@ int main(void)
 
 			if(aiFlag==1 && jogador==2){// se for para jogar contra o computador
 				meteJogAI();
-			}else
+
+			}else{
 				jogo();//não deve ser preciso comentar
+
+			}
 
 		}
 		if (reset == 1) {//flag de reset
@@ -1060,6 +1063,38 @@ void showPlayerPieces(void){
 	BSP_LCD_SetFont(&Font24);
 }
 
+
+void sendLog(void){
+
+	UINT n;
+	char log[SIZE];
+	char buffer[SIZE];
+	int jogadas=player1Pieces+player2Pieces-4;
+
+	sprintf(log,"player 1: %d pieces, player 2: %d pieces",player1Pieces,player2Pieces);
+	sprintf(log,"time:");
+	strcat(log,tempoAMostrar);
+	sprintf(buffer,"jogadas: %d",jogadas);
+	strcat(log,buffer);
+
+
+if (f_mount(&SDFatFS, SDPath, 0) != FR_OK){
+	Error_Handler();
+}
+
+if (f_open(&SDFile, "log.txt", FA_OPEN_APPEND | FA_WRITE ) != FR_OK){
+	Error_Handler();
+}
+int x=strlen(log)*sizeof(char);//não é necessario
+
+if(f_write(&SDFile, log, x, &n) != FR_OK){
+	Error_Handler();
+}
+
+f_close(&SDFile);
+
+}
+
 void jogo(void){
 
 
@@ -1087,7 +1122,7 @@ void jogo(void){
 
 			countMatriz();//conta as peças do jogador
 			showPlayerPieces();//mostra no lcd as peças do jogador e quem ganha
-
+			sendLog();
 
 			japassouaqui2=0;
 			//troca o jogador
@@ -1124,6 +1159,7 @@ void meteJogAI(void){
 	place();
 	redoMatriz();
 	jogador=1;
+	sendLog();
 
 }
 
